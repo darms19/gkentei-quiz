@@ -1,0 +1,149 @@
+import { useState, useEffect, useCallback } from "react";
+import Home from "./components/Home.jsx";
+import Quiz from "./components/Quiz.jsx";
+import Explanation from "./components/Explanation.jsx";
+import Dashboard from "./components/Dashboard.jsx";
+import Settings from "./components/Settings.jsx";
+import { generateQuestion } from "./lib/api.js";
+import {
+  getActiveConfig,
+  getStats,
+  recordAnswer,
+  pickWeakCategory,
+  getRecentQuestions,
+  addRecentQuestion,
+} from "./lib/storage.js";
+
+// 画面: home | quiz | explanation | dashboard | settings
+export default function App() {
+  const [screen, setScreen] = useState("home");
+  const [stats, setStats] = useState(getStats);
+  const [session, setSession] = useState(null); // { mode, category, difficulty }
+  const [question, setQuestion] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // 初回起動時にAPIキー未設定なら設定画面へ
+  useEffect(() => {
+    if (!getActiveConfig().apiKey) setScreen("settings");
+  }, []);
+
+  const loadQuestion = useCallback(
+    async ({ mode, category, difficulty }) => {
+      const { provider, apiKey, model } = getActiveConfig();
+      if (!apiKey) {
+        setScreen("settings");
+        return;
+      }
+      // 苦手分野優先モードでは毎問カテゴリを選び直す
+      const actualCategory =
+        mode === "weak" ? pickWeakCategory(getStats()) : category;
+
+      setSession({ mode, category, difficulty });
+      setLoading(true);
+      setError(null);
+      setQuestion(null);
+      setSelectedIndex(null);
+      setScreen("quiz");
+
+      try {
+        const q = await generateQuestion({
+          provider,
+          apiKey,
+          model,
+          category: actualCategory,
+          difficulty,
+          recentQuestions: getRecentQuestions(actualCategory),
+        });
+        q.category = actualCategory;
+        q.difficulty = difficulty;
+        addRecentQuestion(actualCategory, q.question);
+        setQuestion(q);
+      } catch (e) {
+        setError(e.message ?? "問題の生成に失敗しました");
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  const handleAnswer = (index) => {
+    if (selectedIndex !== null || !question) return;
+    setSelectedIndex(index);
+    const isCorrect = index === question.answerIndex;
+    setStats(recordAnswer(question.category, isCorrect));
+    setScreen("explanation");
+  };
+
+  const handleNext = () => {
+    if (session) loadQuestion(session);
+  };
+
+  return (
+    <div className="min-h-dvh bg-slate-100 text-slate-900">
+      <header className="sticky top-0 z-10 bg-slate-800 text-white shadow">
+        <div className="mx-auto flex max-w-xl items-center justify-between px-4 py-3">
+          <button
+            onClick={() => setScreen("home")}
+            className="text-lg font-bold tracking-wide"
+          >
+            G検定 問題集
+          </button>
+          <nav className="flex gap-2 text-sm">
+            <button
+              onClick={() => setScreen("dashboard")}
+              className={`rounded-lg px-3 py-1.5 transition ${
+                screen === "dashboard" ? "bg-slate-600" : "hover:bg-slate-700"
+              }`}
+            >
+              成績
+            </button>
+            <button
+              onClick={() => setScreen("settings")}
+              className={`rounded-lg px-3 py-1.5 transition ${
+                screen === "settings" ? "bg-slate-600" : "hover:bg-slate-700"
+              }`}
+            >
+              設定
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-xl px-4 py-6 pb-12">
+        {screen === "home" && <Home stats={stats} onStart={loadQuestion} />}
+        {screen === "quiz" && (
+          <Quiz
+            question={question}
+            loading={loading}
+            error={error}
+            onAnswer={handleAnswer}
+            onRetry={handleNext}
+            onBack={() => setScreen("home")}
+          />
+        )}
+        {screen === "explanation" && question && (
+          <Explanation
+            question={question}
+            selectedIndex={selectedIndex}
+            onNext={handleNext}
+            onHome={() => setScreen("home")}
+            onDashboard={() => setScreen("dashboard")}
+          />
+        )}
+        {screen === "dashboard" && (
+          <Dashboard
+            stats={stats}
+            onStatsChange={setStats}
+            onHome={() => setScreen("home")}
+          />
+        )}
+        {screen === "settings" && (
+          <Settings onDone={() => setScreen("home")} />
+        )}
+      </main>
+    </div>
+  );
+}

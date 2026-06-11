@@ -1,0 +1,61 @@
+# G検定 問題集アプリ
+
+LLM API(Claude / OpenAI / Gemini)で G検定の4択問題を自動生成し、苦手分野を管理できる学習用Webアプリ。
+
+## 起動方法
+
+```sh
+npm install
+npm run dev
+```
+
+ブラウザで http://localhost:5173 を開き、初回に「設定」で使用するAIとAPIキーを設定してください。
+スマホから使う場合は `npm run dev -- --host` でLAN公開し、PCのIPアドレスにアクセスします。
+
+## 対応プロバイダ
+
+| プロバイダ | 既定モデル | APIキー取得先 |
+|---|---|---|
+| Claude (Anthropic) | claude-sonnet-4-20250514 | https://console.anthropic.com/ |
+| OpenAI | gpt-5-mini | https://platform.openai.com/api-keys |
+| Gemini (Google) | gemini-2.5-flash | https://aistudio.google.com/apikey |
+
+プロバイダごとにAPIキーとモデル名を保存でき、設定画面でいつでも切り替えられます。
+
+## 機能
+
+- **カテゴリ別出題**: 機械学習・深層学習・数学基礎・AIの歴史・法律・倫理・ビジネス応用
+- **難易度選択**: やさしい / 標準 / むずかしい
+- **苦手分野優先モード**: カテゴリ別正解率に基づき、正解率が低い分野ほど高確率で出題
+- **ダッシュボード**: カテゴリ別正解率のバーグラフ(低い順)、全体正解率、リセット
+- **重複出題の抑制**: カテゴリごとに直近20問の問題文を記録し、プロンプトで重複を回避
+
+## 技術構成
+
+- React 18 + Vite + Tailwind CSS v4
+- Anthropic Messages API をブラウザから直接呼び出し(`anthropic-dangerous-direct-browser-access` ヘッダー使用)
+- データ(APIキー・成績・出題履歴)はすべて localStorage に保存。サーバー不要
+
+## スマホ(出先)から使う — GitHub Pages デプロイ
+
+このリポジトリには GitHub Actions の自動デプロイ設定(`.github/workflows/deploy.yml`)が含まれています。
+
+1. https://github.com/new で **Public** リポジトリを作成(名前は任意。例: `gkentei-quiz`)
+2. このフォルダで以下を実行:
+
+   ```sh
+   git remote add origin https://github.com/<ユーザー名>/<リポジトリ名>.git
+   git push -u origin main
+   ```
+
+3. push すると自動でビルド&デプロイされ、数分後に
+   `https://<ユーザー名>.github.io/<リポジトリ名>/` で公開されます
+   (もしActionsがPages設定エラーで失敗したら、リポジトリの Settings → Pages → Source を「GitHub Actions」にして再実行)
+
+スマホでURLを開き、ブラウザメニューの「ホーム画面に追加」をするとアプリのように起動できます。
+APIキーはビルドや リポジトリには含まれず、各端末で入力して各端末のlocalStorageにのみ保存されます。
+
+## 注意
+
+- 既定モデル `claude-sonnet-4-20250514` は **2026年6月15日に廃止予定**です。廃止後は設定画面からモデルを `claude-sonnet-4-6` などに変更してください。
+- APIキーをブラウザに保存する構成のため、**個人の学習用途専用**です。公開サイトとしてデプロイしないでください(キーが第三者に渡る恐れがあります)。
