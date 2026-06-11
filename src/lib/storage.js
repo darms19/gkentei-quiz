@@ -5,6 +5,8 @@ const KEYS = {
   providers: "gkentei.providers",
   stats: "gkentei.stats",
   recent: "gkentei.recentQuestions",
+  bankUsed: "gkentei.bankUsed",
+  bankFirst: "gkentei.bankFirst",
   // v1(Claude単独対応時代)のキー。初回読み込み時に providers へ移行する
   legacyApiKey: "gkentei.apiKey",
   legacyModel: "gkentei.model",
@@ -108,6 +110,37 @@ export function getActiveConfig() {
     apiKey: config.apiKey ?? "",
     model: config.model || PROVIDERS[provider].defaultModel,
   };
+}
+
+// --- 内蔵問題バンクの利用設定・出題済み記録 ---
+
+// 内蔵問題を優先して出題するか(APIクレジット節約。既定: ON)
+export function isBankFirst() {
+  return read(KEYS.bankFirst, true);
+}
+
+export function setBankFirst(value) {
+  write(KEYS.bankFirst, !!value);
+}
+
+export function getUsedBankIds() {
+  return read(KEYS.bankUsed, []);
+}
+
+export function markBankUsed(id) {
+  const used = getUsedBankIds();
+  if (!used.includes(id)) {
+    used.push(id);
+    write(KEYS.bankUsed, used);
+  }
+}
+
+export function removeUsedBankIds(ids) {
+  const remove = new Set(ids);
+  write(
+    KEYS.bankUsed,
+    getUsedBankIds().filter((id) => !remove.has(id))
+  );
 }
 
 // --- カテゴリ別成績 ---

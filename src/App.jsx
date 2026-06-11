@@ -5,6 +5,7 @@ import Explanation from "./components/Explanation.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Settings from "./components/Settings.jsx";
 import { generateQuestion } from "./lib/api.js";
+import { pickBankQuestion, resetBankForCategory } from "./lib/bank.js";
 import {
   getActiveConfig,
   getStats,
@@ -12,6 +13,7 @@ import {
   pickWeakCategory,
   getRecentQuestions,
   addRecentQuestion,
+  isBankFirst,
 } from "./lib/storage.js";
 
 // 画面: home | quiz | explanation | dashboard | settings
@@ -24,29 +26,51 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // 初回起動時にAPIキー未設定なら設定画面へ
+  // 初回起動時にAPIキー未設定でも内蔵問題で使えるため、設定画面への強制遷移は
+  // 「内蔵問題優先がOFFかつキー未設定」のときのみ行う
   useEffect(() => {
-    if (!getActiveConfig().apiKey) setScreen("settings");
+    if (!getActiveConfig().apiKey && !isBankFirst()) setScreen("settings");
   }, []);
 
   const loadQuestion = useCallback(
     async ({ mode, category, difficulty }) => {
       const { provider, apiKey, model } = getActiveConfig();
-      if (!apiKey) {
-        setScreen("settings");
-        return;
-      }
       // 苦手分野優先モードでは毎問カテゴリを選び直す
       const actualCategory =
         mode === "weak" ? pickWeakCategory(getStats()) : category;
 
       setSession({ mode, category, difficulty });
-      setLoading(true);
       setError(null);
       setQuestion(null);
       setSelectedIndex(null);
       setScreen("quiz");
 
+      // 1. 内蔵問題バンクから出題(APIクレジット消費なし)
+      if (isBankFirst()) {
+        let q = pickBankQuestion(actualCategory, difficulty);
+        // バンクを使い切っていてAPIキーもない場合は、出題記録をリセットして再利用
+        if (!q && !apiKey) {
+          resetBankForCategory(actualCategory);
+          q = pickBankQuestion(actualCategory, difficulty);
+        }
+        if (q) {
+          addRecentQuestion(actualCategory, q.question);
+          setQuestion(q);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 2. バンクにない(使い切った)場合はAPIで生成
+      if (!apiKey) {
+        setError(
+          "APIキーが未設定です。内蔵問題を使うには設定で「内蔵問題を優先」をONにするか、APIキーを設定してください。"
+        );
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
       try {
         const q = await generateQuestion({
           provider,
@@ -58,6 +82,7 @@ export default function App() {
         });
         q.category = actualCategory;
         q.difficulty = difficulty;
+        q.source = "ai";
         addRecentQuestion(actualCategory, q.question);
         setQuestion(q);
       } catch (e) {

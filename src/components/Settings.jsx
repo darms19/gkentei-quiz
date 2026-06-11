@@ -5,7 +5,10 @@ import {
   setSelectedProvider,
   getProviderConfigs,
   setProviderConfig,
+  isBankFirst,
+  setBankFirst,
 } from "../lib/storage.js";
+import { QUESTION_BANK } from "../data/questionBank.js";
 
 export default function Settings({ onDone }) {
   const [provider, setProvider] = useState(getSelectedProvider);
@@ -22,6 +25,7 @@ export default function Settings({ onDone }) {
     return initial;
   });
   const [showKey, setShowKey] = useState(false);
+  const [bankFirst, setBankFirstState] = useState(isBankFirst);
 
   const current = configs[provider];
   const def = PROVIDERS[provider];
@@ -38,15 +42,39 @@ export default function Settings({ onDone }) {
       setProviderConfig(id, configs[id]);
     }
     setSelectedProvider(provider);
+    setBankFirst(bankFirst);
     onDone();
   };
 
-  const canSave = current.apiKey.trim().length > 0;
+  // 内蔵問題のみで使う場合はAPIキーなしでも保存できる
+  const canSave = bankFirst || current.apiKey.trim().length > 0;
 
   return (
     <div className="space-y-6">
+      {/* 出題ソース */}
       <div className="rounded-2xl bg-white p-5 shadow">
-        <h2 className="font-bold">⚙️ 設定</h2>
+        <h2 className="font-bold">📦 出題ソース</h2>
+        <label className="mt-3 flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            checked={bankFirst}
+            onChange={(e) => setBankFirstState(e.target.checked)}
+            className="mt-1 h-5 w-5 accent-blue-600"
+          />
+          <span>
+            <span className="block text-sm font-medium text-slate-700">
+              内蔵問題を優先して出題(APIクレジット節約)
+            </span>
+            <span className="mt-0.5 block text-xs text-slate-500">
+              アプリに収録済みの{QUESTION_BANK.length}問(各カテゴリ9問)から先に出題し、
+              使い切ったらAIで生成します。APIキーなしでも内蔵問題だけで学習できます。
+            </span>
+          </span>
+        </label>
+      </div>
+
+      <div className="rounded-2xl bg-white p-5 shadow">
+        <h2 className="font-bold">⚙️ AI設定</h2>
 
         {/* プロバイダ選択 */}
         <div className="mt-4">

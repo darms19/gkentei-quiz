@@ -44,6 +44,15 @@ export default function Quiz({ question, loading, error, onAnswer, onRetry, onBa
         <span className="rounded-full bg-slate-200 px-3 py-1 font-medium text-slate-600">
           {question.difficulty}
         </span>
+        <span
+          className={`rounded-full px-3 py-1 font-medium ${
+            question.source === "bank"
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-purple-100 text-purple-700"
+          }`}
+        >
+          {question.source === "bank" ? "内蔵問題" : "AI生成"}
+        </span>
       </div>
 
       <div className="rounded-2xl bg-white p-5 shadow">
