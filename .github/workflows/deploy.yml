@@ -31,7 +31,7 @@ jobs:
           else
             BASE="/${{ github.event.repository.name }}/"
           fi
-          npm run build -- --base="$BASE"
+          npx vite build --base="$BASE"
       - uses: actions/configure-pages@v5
         with:
           enablement: true
