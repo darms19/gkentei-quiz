@@ -10,6 +10,7 @@ import {
   exportData,
   importData,
 } from "../lib/storage.js";
+import { totalStockCount, clearStock, STOCK_TARGET } from "../lib/aiStock.js";
 import { QUESTION_BANK } from "../data/questionBank.js";
 
 export default function Settings({ onDone }) {
@@ -29,7 +30,15 @@ export default function Settings({ onDone }) {
   const [showKey, setShowKey] = useState(false);
   const [bankFirst, setBankFirstState] = useState(isBankFirst);
   const [dataMessage, setDataMessage] = useState(null);
+  const [stockCount, setStockCount] = useState(totalStockCount);
   const fileInputRef = useRef(null);
+
+  const handleClearStock = () => {
+    if (window.confirm("AI生成問題のストックを削除しますか？")) {
+      clearStock();
+      setStockCount(0);
+    }
+  };
 
   const current = configs[provider];
   const def = PROVIDERS[provider];
@@ -115,6 +124,30 @@ export default function Settings({ onDone }) {
             </span>
           </span>
         </label>
+        <div className="mt-4 border-t border-slate-200 pt-3 dark:border-slate-700">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+              AI生成問題のストック
+            </span>
+            <span className="text-sm font-bold text-blue-700 dark:text-blue-400">
+              {stockCount}問
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            AI出題を使うと、待ち時間をなくすためカテゴリ×難易度ごとに
+            {STOCK_TARGET}問まで裏で先に生成してストックします。
+            ストックからの出題は即時に表示されます。
+          </p>
+          {stockCount > 0 && (
+            <button
+              type="button"
+              onClick={handleClearStock}
+              className="mt-2 text-xs text-red-500 underline-offset-2 hover:underline"
+            >
+              ストックを削除
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="rounded-2xl bg-white p-5 shadow dark:bg-slate-800">

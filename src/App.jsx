@@ -11,6 +11,7 @@ import Review from "./components/Review.jsx";
 import Flashcards from "./components/Flashcards.jsx";
 import { generateQuestion } from "./lib/api.js";
 import { pickBankQuestion, resetBankForCategory } from "./lib/bank.js";
+import { takeFromStock, refillStock } from "./lib/aiStock.js";
 import { shuffleChoices } from "./lib/shuffleChoices.js";
 import {
   getActiveConfig,
@@ -98,7 +99,7 @@ export default function App() {
         }
       }
 
-      // 2. バンクにない(使い切った)場合はAPIで生成
+      // 2. バンクにない(使い切った)場合はAIで出題
       if (!apiKey) {
         setError(
           "APIキーが未設定です。内蔵問題を使うには設定で「内蔵問題を優先」をONにするか、APIキーを設定してください。"
@@ -107,6 +108,17 @@ export default function App() {
         return;
       }
 
+      // 2a. 事前ストックがあれば待ち時間なしで出題し、減った分を裏で補充する
+      const stocked = takeFromStock(actualCategory, difficulty);
+      if (stocked) {
+        addRecentQuestion(actualCategory, stocked.question);
+        setQuestion(shuffleChoices(stocked));
+        setLoading(false);
+        refillStock({ provider, apiKey, model, category: actualCategory, difficulty });
+        return;
+      }
+
+      // 2b. ストックが空ならその場で1問生成し、表示後に裏でストックを作る
       setLoading(true);
       try {
         const q = await generateQuestion({
@@ -122,6 +134,7 @@ export default function App() {
         q.source = "ai";
         addRecentQuestion(actualCategory, q.question);
         setQuestion(shuffleChoices(q));
+        refillStock({ provider, apiKey, model, category: actualCategory, difficulty });
       } catch (e) {
         setError(e.message ?? "問題の生成に失敗しました");
       } finally {
