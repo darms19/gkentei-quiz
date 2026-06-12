@@ -7,6 +7,8 @@ import Settings from "./components/Settings.jsx";
 import Glossary from "./components/Glossary.jsx";
 import Bookmarks from "./components/Bookmarks.jsx";
 import Exam from "./components/Exam.jsx";
+import Review from "./components/Review.jsx";
+import Flashcards from "./components/Flashcards.jsx";
 import { generateQuestion } from "./lib/api.js";
 import { pickBankQuestion, resetBankForCategory } from "./lib/bank.js";
 import { shuffleChoices } from "./lib/shuffleChoices.js";
@@ -20,9 +22,12 @@ import {
   isBankFirst,
   getTheme,
   setTheme,
+  addToReview,
+  recordReviewResult,
+  getDueReviewItems,
 } from "./lib/storage.js";
 
-// 画面: home | quiz | explanation | dashboard | settings | glossary | bookmarks | exam
+// 画面: home | quiz | explanation | dashboard | settings | glossary | bookmarks | exam | review | flashcards
 export default function App() {
   const [screen, setScreen] = useState("home");
   const [stats, setStats] = useState(getStats);
@@ -136,17 +141,54 @@ export default function App() {
     setScreen("quiz");
   };
 
+  // 今日が期日の復習問題をランダムに1問選ぶ(なければ null)
+  const pickDueReviewQuestion = () => {
+    const due = getDueReviewItems();
+    if (due.length === 0) return null;
+    const item = due[Math.floor(Math.random() * due.length)];
+    return shuffleChoices(item.question);
+  };
+
+  const startReviewSession = () => {
+    const q = pickDueReviewQuestion();
+    if (!q) return;
+    setSession({ mode: "review", category: q.category, difficulty: q.difficulty });
+    setError(null);
+    setQuestion(q);
+    setSelectedIndex(null);
+    setLoading(false);
+    setScreen("quiz");
+  };
+
   const handleAnswer = (index) => {
     if (selectedIndex !== null || !question) return;
     setSelectedIndex(index);
     const isCorrect = index === question.answerIndex;
     setStats(recordAnswer(question.category, question.difficulty, isCorrect));
+    if (session?.mode === "review") {
+      // 復習中: 間隔反復の段階を進める/戻す
+      recordReviewResult(question, isCorrect);
+    } else if (!isCorrect) {
+      // 通常出題・ブックマークで間違えたら復習リストへ自動登録
+      addToReview(question);
+    }
     setScreen("explanation");
   };
 
   const handleNext = () => {
     if (session?.mode === "bookmark") {
       setScreen("bookmarks");
+      return;
+    }
+    if (session?.mode === "review") {
+      const q = pickDueReviewQuestion();
+      if (q) {
+        setQuestion(q);
+        setSelectedIndex(null);
+        setScreen("quiz");
+      } else {
+        setScreen("review"); // 今日の復習が終わったら一覧へ
+      }
       return;
     }
     if (session) loadQuestion(session);
@@ -205,6 +247,8 @@ export default function App() {
             onStart={loadQuestion}
             onBookmarks={() => setScreen("bookmarks")}
             onExam={() => setScreen("exam")}
+            onReview={() => setScreen("review")}
+            onFlashcards={() => setScreen("flashcards")}
           />
         )}
         {screen === "quiz" && (
@@ -251,6 +295,15 @@ export default function App() {
             onStatsChange={setStats}
             onHome={() => setScreen("home")}
           />
+        )}
+        {screen === "review" && (
+          <Review
+            onStart={startReviewSession}
+            onBack={() => setScreen("home")}
+          />
+        )}
+        {screen === "flashcards" && (
+          <Flashcards onBack={() => setScreen("home")} />
         )}
       </main>
     </div>

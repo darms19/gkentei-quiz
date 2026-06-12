@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { EXAM_PRESETS, buildExamQuestions } from "../lib/exam.js";
-import { CATEGORIES, recordAnswer, getStats } from "../lib/storage.js";
+import {
+  CATEGORIES,
+  recordAnswer,
+  getStats,
+  addToReview,
+} from "../lib/storage.js";
 
 const CHOICE_LABELS = ["A", "B", "C", "D"];
 const PASS_LINE = 0.7; // 合格ラインは非公開のため一般に言われる70%を目安とする
@@ -123,7 +128,9 @@ export default function Exam({ onRunningChange, onStatsChange, onHome }) {
     // 解答済みの問題のみ通常の成績・履歴に記録する(未回答は記録しない)
     questions.forEach((q, i) => {
       if (answers[i] !== null) {
-        recordAnswer(q.category, q.difficulty, answers[i] === q.answerIndex);
+        const isCorrect = answers[i] === q.answerIndex;
+        recordAnswer(q.category, q.difficulty, isCorrect);
+        if (!isCorrect) addToReview(q); // 間違えた問題は復習リストへ
       }
     });
     onStatsChange?.(getStats());

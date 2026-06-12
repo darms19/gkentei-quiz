@@ -5,12 +5,24 @@ import {
   accuracyOf,
   getBookmarks,
   getStreak,
+  getDueReviewItems,
+  getKnownTerms,
 } from "../lib/storage.js";
+import { GLOSSARY } from "../data/glossary.js";
 
-export default function Home({ stats, onStart, onBookmarks, onExam }) {
+export default function Home({
+  stats,
+  onStart,
+  onBookmarks,
+  onExam,
+  onReview,
+  onFlashcards,
+}) {
   const [difficulty, setDifficulty] = useState("標準");
   const bookmarkCount = getBookmarks().length;
   const streak = getStreak();
+  const dueCount = getDueReviewItems().length;
+  const knownCount = Object.keys(getKnownTerms()).length;
 
   // 苦手分野(正解率60%未満)を表示用に抽出
   const weakCategories = CATEGORIES.filter((c) => {
@@ -75,6 +87,28 @@ export default function Home({ stats, onStart, onBookmarks, onExam }) {
         </button>
       </section>
 
+      {/* 復習モード */}
+      <section>
+        <button
+          onClick={onReview}
+          className="w-full rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-600 px-5 py-4 text-left text-white shadow-lg transition active:scale-[0.98]"
+        >
+          <div className="flex items-center justify-between">
+            <div className="text-lg font-bold">🔁 復習モード</div>
+            {dueCount > 0 && (
+              <span className="rounded-full bg-white/25 px-3 py-1 text-sm font-bold">
+                今日 {dueCount}問
+              </span>
+            )}
+          </div>
+          <div className="mt-1 text-sm text-teal-100">
+            {dueCount > 0
+              ? "間違えた問題の復習期日が来ています"
+              : "間違えた問題を間隔反復で復習します"}
+          </div>
+        </button>
+      </section>
+
       {/* カテゴリ選択 */}
       <section>
         <h2 className="mb-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
@@ -103,17 +137,26 @@ export default function Home({ stats, onStart, onBookmarks, onExam }) {
         </div>
       </section>
 
-      {/* ブックマーク */}
-      <section>
+      {/* ブックマーク・フラッシュカード */}
+      <section className="grid grid-cols-2 gap-3">
         <button
           onClick={onBookmarks}
-          className="w-full rounded-2xl bg-white px-5 py-4 text-left shadow transition hover:shadow-md active:scale-[0.98] dark:bg-slate-800"
+          className="rounded-2xl bg-white p-4 text-left shadow transition hover:shadow-md active:scale-[0.98] dark:bg-slate-800"
         >
-          <div className="font-semibold">🔖 ブックマークした問題</div>
+          <div className="font-semibold">🔖 ブックマーク</div>
           <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             {bookmarkCount > 0
-              ? `${bookmarkCount}問を保存中 — タップして解き直す`
-              : "解説画面から問題を保存して、あとで解き直せます"}
+              ? `${bookmarkCount}問を保存中`
+              : "保存した問題を解き直す"}
+          </div>
+        </button>
+        <button
+          onClick={onFlashcards}
+          className="rounded-2xl bg-white p-4 text-left shadow transition hover:shadow-md active:scale-[0.98] dark:bg-slate-800"
+        >
+          <div className="font-semibold">🃏 フラッシュカード</div>
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            用語 習得 {knownCount}/{GLOSSARY.length}
           </div>
         </button>
       </section>

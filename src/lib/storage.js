@@ -10,6 +10,8 @@ const KEYS = {
   history: "gkentei.history",
   bookmarks: "gkentei.bookmarks",
   theme: "gkentei.theme",
+  review: "gkentei.review",
+  flashcards: "gkentei.flashcards",
   // v1(Claude単独対応時代)のキー。初回読み込み時に providers へ移行する
   legacyApiKey: "gkentei.apiKey",
   legacyModel: "gkentei.model",
@@ -308,6 +310,90 @@ export function removeBookmark(question) {
   );
 }
 
+// --- 間違えた問題の復習リスト(間隔反復) ---
+// item = { question, stage, due: "YYYY-MM-DD", wrongCount }
+// 正解するたびに次回が 1→3→7→14日後 と延び、全段階クリアで卒業(リストから削除)。
+// 間違えると最初の段階に戻る。
+
+const REVIEW_INTERVALS = [1, 3, 7, 14];
+
+export function getReviewItems() {
+  return read(KEYS.review, []);
+}
+
+export function getDueReviewItems() {
+  const today = todayKey();
+  return getReviewItems().filter((item) => item.due <= today);
+}
+
+// 不正解だった問題を復習リストに登録する(登録済みなら段階をリセット)
+export function addToReview(question) {
+  const items = getReviewItems();
+  const existing = items.find((item) => sameQuestion(item.question, question));
+  if (existing) {
+    existing.stage = 0;
+    existing.due = todayKey();
+    existing.wrongCount += 1;
+  } else {
+    items.push({ question, stage: 0, due: todayKey(), wrongCount: 1 });
+  }
+  write(KEYS.review, items);
+}
+
+// 復習での解答結果を反映する。卒業した場合は true を返す
+export function recordReviewResult(question, isCorrect) {
+  const items = getReviewItems();
+  const index = items.findIndex((item) =>
+    sameQuestion(item.question, question)
+  );
+  if (index < 0) return false;
+  const item = items[index];
+  if (isCorrect) {
+    if (item.stage >= REVIEW_INTERVALS.length) {
+      items.splice(index, 1); // 卒業
+      write(KEYS.review, items);
+      return true;
+    }
+    const d = new Date();
+    d.setDate(d.getDate() + REVIEW_INTERVALS[item.stage]);
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    item.due = `${d.getFullYear()}-${m}-${day}`;
+    item.stage += 1;
+  } else {
+    item.stage = 0;
+    item.due = todayKey();
+    item.wrongCount += 1;
+  }
+  write(KEYS.review, items);
+  return false;
+}
+
+export function removeReviewItem(question) {
+  write(
+    KEYS.review,
+    getReviewItems().filter((item) => !sameQuestion(item.question, question))
+  );
+}
+
+// --- フラッシュカードの習得状況 ---
+// known = { [term]: true }
+
+export function getKnownTerms() {
+  return read(KEYS.flashcards, {});
+}
+
+export function setTermKnown(term, known) {
+  const map = getKnownTerms();
+  if (known) map[term] = true;
+  else delete map[term];
+  write(KEYS.flashcards, map);
+}
+
+export function resetKnownTerms() {
+  write(KEYS.flashcards, {});
+}
+
 // --- 学習データのエクスポート/インポート ---
 // APIキー(providers)は安全のため含めない
 
@@ -318,6 +404,8 @@ const EXPORT_KEYS = [
   KEYS.recent,
   KEYS.bankUsed,
   KEYS.bankFirst,
+  KEYS.review,
+  KEYS.flashcards,
 ];
 
 export function exportData() {
