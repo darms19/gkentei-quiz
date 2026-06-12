@@ -7,7 +7,7 @@ import {
   getStreak,
 } from "../lib/storage.js";
 
-export default function Home({ stats, onStart, onBookmarks }) {
+export default function Home({ stats, onStart, onBookmarks, onExam }) {
   const [difficulty, setDifficulty] = useState("標準");
   const bookmarkCount = getBookmarks().length;
   const streak = getStreak();
@@ -58,6 +58,19 @@ export default function Home({ stats, onStart, onBookmarks }) {
             {weakCategories.length > 0
               ? `苦手: ${weakCategories.join("・")}`
               : "正解率の低い分野から優先的に出題します"}
+          </div>
+        </button>
+      </section>
+
+      {/* 模擬試験モード */}
+      <section>
+        <button
+          onClick={onExam}
+          className="w-full rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 px-5 py-4 text-left text-white shadow-lg transition active:scale-[0.98]"
+        >
+          <div className="text-lg font-bold">📝 模擬試験モード</div>
+          <div className="mt-1 text-sm text-indigo-100">
+            時間制限つきでまとめて解いて、本番形式で実力を測ります
           </div>
         </button>
       </section>

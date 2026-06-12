@@ -6,8 +6,10 @@ import Dashboard from "./components/Dashboard.jsx";
 import Settings from "./components/Settings.jsx";
 import Glossary from "./components/Glossary.jsx";
 import Bookmarks from "./components/Bookmarks.jsx";
+import Exam from "./components/Exam.jsx";
 import { generateQuestion } from "./lib/api.js";
 import { pickBankQuestion, resetBankForCategory } from "./lib/bank.js";
+import { shuffleChoices } from "./lib/shuffleChoices.js";
 import {
   getActiveConfig,
   getStats,
@@ -20,7 +22,7 @@ import {
   setTheme,
 } from "./lib/storage.js";
 
-// 画面: home | quiz | explanation | dashboard | settings | glossary | bookmarks
+// 画面: home | quiz | explanation | dashboard | settings | glossary | bookmarks | exam
 export default function App() {
   const [screen, setScreen] = useState("home");
   const [stats, setStats] = useState(getStats);
@@ -30,6 +32,21 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [theme, setThemeState] = useState(getTheme);
+  const [examRunning, setExamRunning] = useState(false);
+
+  // 模擬試験の受験中に画面を離れる場合は確認する
+  const navigate = useCallback(
+    (next) => {
+      if (
+        examRunning &&
+        !window.confirm("模擬試験を中断しますか？進捗は失われます。")
+      ) {
+        return;
+      }
+      setScreen(next);
+    },
+    [examRunning]
+  );
 
   // 初回起動時にAPIキー未設定でも内蔵問題で使えるため、設定画面への強制遷移は
   // 「内蔵問題優先がOFFかつキー未設定」のときのみ行う
@@ -99,7 +116,7 @@ export default function App() {
         q.difficulty = difficulty;
         q.source = "ai";
         addRecentQuestion(actualCategory, q.question);
-        setQuestion(q);
+        setQuestion(shuffleChoices(q));
       } catch (e) {
         setError(e.message ?? "問題の生成に失敗しました");
       } finally {
@@ -140,14 +157,14 @@ export default function App() {
       <header className="sticky top-0 z-10 bg-slate-800 text-white shadow dark:bg-slate-900">
         <div className="mx-auto flex max-w-xl items-center justify-between px-4 py-3">
           <button
-            onClick={() => setScreen("home")}
+            onClick={() => navigate("home")}
             className="text-lg font-bold tracking-wide"
           >
             G検定 問題集
           </button>
           <nav className="flex items-center gap-1.5 text-sm">
             <button
-              onClick={() => setScreen("glossary")}
+              onClick={() => navigate("glossary")}
               className={`rounded-lg px-2.5 py-1.5 transition ${
                 screen === "glossary" ? "bg-slate-600" : "hover:bg-slate-700"
               }`}
@@ -155,7 +172,7 @@ export default function App() {
               用語集
             </button>
             <button
-              onClick={() => setScreen("dashboard")}
+              onClick={() => navigate("dashboard")}
               className={`rounded-lg px-2.5 py-1.5 transition ${
                 screen === "dashboard" ? "bg-slate-600" : "hover:bg-slate-700"
               }`}
@@ -163,7 +180,7 @@ export default function App() {
               成績
             </button>
             <button
-              onClick={() => setScreen("settings")}
+              onClick={() => navigate("settings")}
               className={`rounded-lg px-2.5 py-1.5 transition ${
                 screen === "settings" ? "bg-slate-600" : "hover:bg-slate-700"
               }`}
@@ -187,6 +204,7 @@ export default function App() {
             stats={stats}
             onStart={loadQuestion}
             onBookmarks={() => setScreen("bookmarks")}
+            onExam={() => setScreen("exam")}
           />
         )}
         {screen === "quiz" && (
@@ -225,6 +243,13 @@ export default function App() {
           <Bookmarks
             onRetry={startBookmarkQuestion}
             onBack={() => setScreen("home")}
+          />
+        )}
+        {screen === "exam" && (
+          <Exam
+            onRunningChange={setExamRunning}
+            onStatsChange={setStats}
+            onHome={() => setScreen("home")}
           />
         )}
       </main>

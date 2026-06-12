@@ -1,5 +1,6 @@
 // 内蔵問題バンクからの出題ロジック
 import { QUESTION_BANK } from "../data/questionBank.js";
+import { shuffleChoices } from "./shuffleChoices.js";
 import {
   getUsedBankIds,
   markBankUsed,
@@ -26,7 +27,7 @@ export function pickBankQuestion(category, difficulty) {
 
   const q = pickRandom(pool);
   markBankUsed(q.id);
-  return { ...q, source: "bank" };
+  return shuffleChoices({ ...q, source: "bank" });
 }
 
 // カテゴリの出題済み記録をリセットする(APIキーなしで使い切った場合の再利用用)
