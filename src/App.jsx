@@ -4,6 +4,7 @@ import Quiz from "./components/Quiz.jsx";
 import Explanation from "./components/Explanation.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Settings from "./components/Settings.jsx";
+import Glossary from "./components/Glossary.jsx";
 import { generateQuestion } from "./lib/api.js";
 import { pickBankQuestion, resetBankForCategory } from "./lib/bank.js";
 import {
@@ -16,7 +17,7 @@ import {
   isBankFirst,
 } from "./lib/storage.js";
 
-// 画面: home | quiz | explanation | dashboard | settings
+// 画面: home | quiz | explanation | dashboard | settings | glossary
 export default function App() {
   const [screen, setScreen] = useState("home");
   const [stats, setStats] = useState(getStats);
@@ -118,6 +119,14 @@ export default function App() {
           </button>
           <nav className="flex gap-2 text-sm">
             <button
+              onClick={() => setScreen("glossary")}
+              className={`rounded-lg px-3 py-1.5 transition ${
+                screen === "glossary" ? "bg-slate-600" : "hover:bg-slate-700"
+              }`}
+            >
+              用語集
+            </button>
+            <button
               onClick={() => setScreen("dashboard")}
               className={`rounded-lg px-3 py-1.5 transition ${
                 screen === "dashboard" ? "bg-slate-600" : "hover:bg-slate-700"
@@ -167,6 +176,9 @@ export default function App() {
         )}
         {screen === "settings" && (
           <Settings onDone={() => setScreen("home")} />
+        )}
+        {screen === "glossary" && (
+          <Glossary onBack={() => setScreen("home")} />
         )}
       </main>
     </div>
