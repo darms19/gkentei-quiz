@@ -1,1 +1,4 @@
 @import "tailwindcss";
+
+/* ダークモードは <html> の .dark クラスで切り替える(OS設定ではなくアプリ内トグル) */
+@custom-variant dark (&:where(.dark, .dark *));

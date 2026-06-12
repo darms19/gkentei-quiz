@@ -24,7 +24,7 @@ export default function Glossary({ onBack }) {
         <h2 className="text-lg font-bold">📖 用語集</h2>
         <button
           onClick={onBack}
-          className="rounded-lg bg-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700"
+          className="rounded-lg bg-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200"
         >
           ホームへ
         </button>
@@ -35,7 +35,7 @@ export default function Glossary({ onBack }) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="用語を検索…"
-        className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
+        className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
       />
 
       <div className="flex flex-wrap gap-2">
@@ -46,7 +46,7 @@ export default function Glossary({ onBack }) {
             className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
               category === c
                 ? "bg-blue-600 text-white"
-                : "bg-white text-slate-600 shadow hover:bg-blue-50"
+                : "bg-white text-slate-600 shadow hover:bg-blue-50 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             }`}
           >
             {c}
@@ -54,26 +54,26 @@ export default function Glossary({ onBack }) {
         ))}
       </div>
 
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-slate-500 dark:text-slate-400">
         {filtered.length} / {GLOSSARY.length} 件
       </p>
 
       <div className="space-y-3">
         {filtered.map((g) => (
-          <div key={g.term} className="rounded-2xl bg-white p-4 shadow">
+          <div key={g.term} className="rounded-2xl bg-white p-4 shadow dark:bg-slate-800">
             <div className="flex items-center gap-2">
               <h3 className="font-bold">{g.term}</h3>
-              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                 {g.category}
               </span>
             </div>
-            <p className="mt-1.5 text-sm leading-relaxed text-slate-700">
+            <p className="mt-1.5 text-sm leading-relaxed text-slate-700 dark:text-slate-200">
               {g.definition}
             </p>
           </div>
         ))}
         {filtered.length === 0 && (
-          <p className="py-12 text-center text-sm text-slate-400">
+          <p className="py-12 text-center text-sm text-slate-400 dark:text-slate-500">
             該当する用語が見つかりませんでした。
           </p>
         )}

@@ -5,6 +5,7 @@ import Explanation from "./components/Explanation.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Settings from "./components/Settings.jsx";
 import Glossary from "./components/Glossary.jsx";
+import Bookmarks from "./components/Bookmarks.jsx";
 import { generateQuestion } from "./lib/api.js";
 import { pickBankQuestion, resetBankForCategory } from "./lib/bank.js";
 import {
@@ -15,9 +16,11 @@ import {
   getRecentQuestions,
   addRecentQuestion,
   isBankFirst,
+  getTheme,
+  setTheme,
 } from "./lib/storage.js";
 
-// 画面: home | quiz | explanation | dashboard | settings | glossary
+// 画面: home | quiz | explanation | dashboard | settings | glossary | bookmarks
 export default function App() {
   const [screen, setScreen] = useState("home");
   const [stats, setStats] = useState(getStats);
@@ -26,12 +29,23 @@ export default function App() {
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [theme, setThemeState] = useState(getTheme);
 
   // 初回起動時にAPIキー未設定でも内蔵問題で使えるため、設定画面への強制遷移は
   // 「内蔵問題優先がOFFかつキー未設定」のときのみ行う
   useEffect(() => {
     if (!getActiveConfig().apiKey && !isBankFirst()) setScreen("settings");
   }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    setThemeState(next);
+  };
 
   const loadQuestion = useCallback(
     async ({ mode, category, difficulty }) => {
@@ -95,21 +109,35 @@ export default function App() {
     []
   );
 
+  // ブックマークした問題を解き直す(成績には通常どおり記録される)
+  const startBookmarkQuestion = (q) => {
+    setSession({ mode: "bookmark", category: q.category, difficulty: q.difficulty });
+    setError(null);
+    setQuestion(q);
+    setSelectedIndex(null);
+    setLoading(false);
+    setScreen("quiz");
+  };
+
   const handleAnswer = (index) => {
     if (selectedIndex !== null || !question) return;
     setSelectedIndex(index);
     const isCorrect = index === question.answerIndex;
-    setStats(recordAnswer(question.category, isCorrect));
+    setStats(recordAnswer(question.category, question.difficulty, isCorrect));
     setScreen("explanation");
   };
 
   const handleNext = () => {
+    if (session?.mode === "bookmark") {
+      setScreen("bookmarks");
+      return;
+    }
     if (session) loadQuestion(session);
   };
 
   return (
-    <div className="min-h-dvh bg-slate-100 text-slate-900">
-      <header className="sticky top-0 z-10 bg-slate-800 text-white shadow">
+    <div className="min-h-dvh bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <header className="sticky top-0 z-10 bg-slate-800 text-white shadow dark:bg-slate-900">
         <div className="mx-auto flex max-w-xl items-center justify-between px-4 py-3">
           <button
             onClick={() => setScreen("home")}
@@ -117,10 +145,10 @@ export default function App() {
           >
             G検定 問題集
           </button>
-          <nav className="flex gap-2 text-sm">
+          <nav className="flex items-center gap-1.5 text-sm">
             <button
               onClick={() => setScreen("glossary")}
-              className={`rounded-lg px-3 py-1.5 transition ${
+              className={`rounded-lg px-2.5 py-1.5 transition ${
                 screen === "glossary" ? "bg-slate-600" : "hover:bg-slate-700"
               }`}
             >
@@ -128,7 +156,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setScreen("dashboard")}
-              className={`rounded-lg px-3 py-1.5 transition ${
+              className={`rounded-lg px-2.5 py-1.5 transition ${
                 screen === "dashboard" ? "bg-slate-600" : "hover:bg-slate-700"
               }`}
             >
@@ -136,18 +164,31 @@ export default function App() {
             </button>
             <button
               onClick={() => setScreen("settings")}
-              className={`rounded-lg px-3 py-1.5 transition ${
+              className={`rounded-lg px-2.5 py-1.5 transition ${
                 screen === "settings" ? "bg-slate-600" : "hover:bg-slate-700"
               }`}
             >
               設定
+            </button>
+            <button
+              onClick={toggleTheme}
+              aria-label="テーマ切り替え"
+              className="rounded-lg px-2 py-1.5 transition hover:bg-slate-700"
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
             </button>
           </nav>
         </div>
       </header>
 
       <main className="mx-auto max-w-xl px-4 py-6 pb-12">
-        {screen === "home" && <Home stats={stats} onStart={loadQuestion} />}
+        {screen === "home" && (
+          <Home
+            stats={stats}
+            onStart={loadQuestion}
+            onBookmarks={() => setScreen("bookmarks")}
+          />
+        )}
         {screen === "quiz" && (
           <Quiz
             question={question}
@@ -179,6 +220,12 @@ export default function App() {
         )}
         {screen === "glossary" && (
           <Glossary onBack={() => setScreen("home")} />
+        )}
+        {screen === "bookmarks" && (
+          <Bookmarks
+            onRetry={startBookmarkQuestion}
+            onBack={() => setScreen("home")}
+          />
         )}
       </main>
     </div>

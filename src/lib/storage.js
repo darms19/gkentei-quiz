@@ -7,6 +7,9 @@ const KEYS = {
   recent: "gkentei.recentQuestions",
   bankUsed: "gkentei.bankUsed",
   bankFirst: "gkentei.bankFirst",
+  history: "gkentei.history",
+  bookmarks: "gkentei.bookmarks",
+  theme: "gkentei.theme",
   // v1(Claude単独対応時代)のキー。初回読み込み時に providers へ移行する
   legacyApiKey: "gkentei.apiKey",
   legacyModel: "gkentei.model",
@@ -150,7 +153,7 @@ export function getStats() {
   return read(KEYS.stats, {});
 }
 
-export function recordAnswer(category, isCorrect) {
+export function recordAnswer(category, difficulty, isCorrect) {
   const stats = getStats();
   const s = stats[category] ?? { correct: 0, total: 0 };
   stats[category] = {
@@ -158,11 +161,73 @@ export function recordAnswer(category, isCorrect) {
     total: s.total + 1,
   };
   write(KEYS.stats, stats);
+  addHistoryEntry(category, difficulty, isCorrect);
   return stats;
 }
 
 export function resetStats() {
   write(KEYS.stats, {});
+  write(KEYS.history, []);
+}
+
+// --- 解答履歴(学習記録・難易度別成績・推移グラフの元データ) ---
+// history = [{ date: "YYYY-MM-DD", category, difficulty, correct: boolean }]
+
+const HISTORY_LIMIT = 5000;
+
+function todayKey(offsetDays = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+export function getHistory() {
+  return read(KEYS.history, []);
+}
+
+function addHistoryEntry(category, difficulty, isCorrect) {
+  const history = getHistory();
+  history.push({
+    date: todayKey(),
+    category,
+    difficulty,
+    correct: !!isCorrect,
+  });
+  write(KEYS.history, history.slice(-HISTORY_LIMIT));
+}
+
+// 日別の解答数・正解数。{ "YYYY-MM-DD": { total, correct } }
+export function getDailyLog() {
+  const daily = {};
+  for (const h of getHistory()) {
+    const d = (daily[h.date] ??= { total: 0, correct: 0 });
+    d.total += 1;
+    if (h.correct) d.correct += 1;
+  }
+  return daily;
+}
+
+// 連続学習日数。今日まだ解いていない場合は昨日までの連続を返す
+export function getStreak() {
+  const daily = getDailyLog();
+  let streak = 0;
+  let offset = daily[todayKey()] ? 0 : -1;
+  while (daily[todayKey(offset - streak)]) streak += 1;
+  return streak;
+}
+
+// 難易度別の成績。{ [difficulty]: { correct, total } }
+export function getDifficultyStats() {
+  const result = {};
+  for (const h of getHistory()) {
+    if (!h.difficulty) continue;
+    const s = (result[h.difficulty] ??= { correct: 0, total: 0 });
+    s.total += 1;
+    if (h.correct) s.correct += 1;
+  }
+  return result;
 }
 
 // カテゴリの正解率。未回答は null を返す
@@ -203,4 +268,89 @@ export function addRecentQuestion(category, questionText) {
   list.push(questionText);
   recent[category] = list.slice(-20);
   write(KEYS.recent, recent);
+}
+
+// --- ブックマーク ---
+// AI生成問題も保存できるよう、問題オブジェクトを丸ごと保存する。
+// 内蔵問題は id、AI生成問題は問題文で同一判定する。
+
+function sameQuestion(a, b) {
+  if (a.id && b.id) return a.id === b.id;
+  return a.question === b.question;
+}
+
+export function getBookmarks() {
+  return read(KEYS.bookmarks, []);
+}
+
+export function isBookmarked(question) {
+  return getBookmarks().some((b) => sameQuestion(b, question));
+}
+
+// 登録/解除をトグルし、登録後の状態(true=登録済み)を返す
+export function toggleBookmark(question) {
+  const bookmarks = getBookmarks();
+  const index = bookmarks.findIndex((b) => sameQuestion(b, question));
+  if (index >= 0) {
+    bookmarks.splice(index, 1);
+    write(KEYS.bookmarks, bookmarks);
+    return false;
+  }
+  bookmarks.push(question);
+  write(KEYS.bookmarks, bookmarks);
+  return true;
+}
+
+export function removeBookmark(question) {
+  write(
+    KEYS.bookmarks,
+    getBookmarks().filter((b) => !sameQuestion(b, question))
+  );
+}
+
+// --- 学習データのエクスポート/インポート ---
+// APIキー(providers)は安全のため含めない
+
+const EXPORT_KEYS = [
+  KEYS.stats,
+  KEYS.history,
+  KEYS.bookmarks,
+  KEYS.recent,
+  KEYS.bankUsed,
+  KEYS.bankFirst,
+];
+
+export function exportData() {
+  const data = {};
+  for (const key of EXPORT_KEYS) {
+    const raw = localStorage.getItem(key);
+    if (raw !== null) data[key] = JSON.parse(raw);
+  }
+  return {
+    app: "gkentei-quiz",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data,
+  };
+}
+
+// 成功時は true。形式不正なら例外を投げる
+export function importData(parsed) {
+  if (parsed?.app !== "gkentei-quiz" || !parsed.data) {
+    throw new Error("このアプリのエクスポートファイルではありません");
+  }
+  for (const key of EXPORT_KEYS) {
+    if (key in parsed.data) write(key, parsed.data[key]);
+  }
+  return true;
+}
+
+// --- テーマ(ライト/ダーク) ---
+
+export function getTheme() {
+  return read(KEYS.theme, "light");
+}
+
+export function setTheme(theme) {
+  write(KEYS.theme, theme === "dark" ? "dark" : "light");
 }

@@ -1,8 +1,16 @@
 import { useState } from "react";
-import { CATEGORIES, DIFFICULTIES, accuracyOf } from "../lib/storage.js";
+import {
+  CATEGORIES,
+  DIFFICULTIES,
+  accuracyOf,
+  getBookmarks,
+  getStreak,
+} from "../lib/storage.js";
 
-export default function Home({ stats, onStart }) {
+export default function Home({ stats, onStart, onBookmarks }) {
   const [difficulty, setDifficulty] = useState("標準");
+  const bookmarkCount = getBookmarks().length;
+  const streak = getStreak();
 
   // 苦手分野(正解率60%未満)を表示用に抽出
   const weakCategories = CATEGORIES.filter((c) => {
@@ -12,9 +20,16 @@ export default function Home({ stats, onStart }) {
 
   return (
     <div className="space-y-6">
+      {/* 連続学習日数 */}
+      {streak > 0 && (
+        <div className="rounded-2xl bg-white px-4 py-3 text-sm shadow dark:bg-slate-800">
+          🔥 連続学習 <span className="font-bold text-orange-600 dark:text-orange-400">{streak}日目</span>
+        </div>
+      )}
+
       {/* 難易度選択 */}
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-slate-500">難易度</h2>
+        <h2 className="mb-2 text-sm font-semibold text-slate-500 dark:text-slate-400">難易度</h2>
         <div className="grid grid-cols-3 gap-2">
           {DIFFICULTIES.map((d) => (
             <button
@@ -23,7 +38,7 @@ export default function Home({ stats, onStart }) {
               className={`rounded-xl border-2 py-2.5 text-sm font-medium transition ${
                 difficulty === d
                   ? "border-blue-600 bg-blue-600 text-white"
-                  : "border-slate-300 bg-white text-slate-700 hover:border-blue-400"
+                  : "border-slate-300 bg-white text-slate-700 hover:border-blue-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
               }`}
             >
               {d}
@@ -49,7 +64,7 @@ export default function Home({ stats, onStart }) {
 
       {/* カテゴリ選択 */}
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-slate-500">
+        <h2 className="mb-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
           カテゴリを選んで出題
         </h2>
         <div className="grid grid-cols-2 gap-3">
@@ -61,10 +76,10 @@ export default function Home({ stats, onStart }) {
                 onClick={() =>
                   onStart({ mode: "category", category: c, difficulty })
                 }
-                className="rounded-2xl bg-white p-4 text-left shadow transition hover:shadow-md active:scale-[0.98]"
+                className="rounded-2xl bg-white p-4 text-left shadow transition hover:shadow-md active:scale-[0.98] dark:bg-slate-800"
               >
                 <div className="font-semibold">{c}</div>
-                <div className="mt-1 text-xs text-slate-500">
+                <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   {acc === null
                     ? "未学習"
                     : `正解率 ${Math.round(acc * 100)}%`}
@@ -73,6 +88,21 @@ export default function Home({ stats, onStart }) {
             );
           })}
         </div>
+      </section>
+
+      {/* ブックマーク */}
+      <section>
+        <button
+          onClick={onBookmarks}
+          className="w-full rounded-2xl bg-white px-5 py-4 text-left shadow transition hover:shadow-md active:scale-[0.98] dark:bg-slate-800"
+        >
+          <div className="font-semibold">🔖 ブックマークした問題</div>
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {bookmarkCount > 0
+              ? `${bookmarkCount}問を保存中 — タップして解き直す`
+              : "解説画面から問題を保存して、あとで解き直せます"}
+          </div>
+        </button>
       </section>
     </div>
   );

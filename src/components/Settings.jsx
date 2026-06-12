@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   PROVIDERS,
   getSelectedProvider,
@@ -7,6 +7,8 @@ import {
   setProviderConfig,
   isBankFirst,
   setBankFirst,
+  exportData,
+  importData,
 } from "../lib/storage.js";
 import { QUESTION_BANK } from "../data/questionBank.js";
 
@@ -26,6 +28,8 @@ export default function Settings({ onDone }) {
   });
   const [showKey, setShowKey] = useState(false);
   const [bankFirst, setBankFirstState] = useState(isBankFirst);
+  const [dataMessage, setDataMessage] = useState(null);
+  const fileInputRef = useRef(null);
 
   const current = configs[provider];
   const def = PROVIDERS[provider];
@@ -46,13 +50,53 @@ export default function Settings({ onDone }) {
     onDone();
   };
 
+  const handleExport = () => {
+    const json = JSON.stringify(exportData(), null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `gkentei-data-${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setDataMessage({ type: "ok", text: "学習データをダウンロードしました。" });
+  };
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 同じファイルを再選択できるようにする
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      if (
+        !window.confirm(
+          "現在の学習データ(成績・履歴・ブックマーク)をファイルの内容で上書きします。よろしいですか？"
+        )
+      ) {
+        return;
+      }
+      importData(parsed);
+      setDataMessage({
+        type: "ok",
+        text: "学習データを読み込みました。画面を再読み込みして反映します…",
+      });
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err) {
+      setDataMessage({
+        type: "error",
+        text: `読み込みに失敗しました: ${err.message}`,
+      });
+    }
+  };
+
   // 内蔵問題のみで使う場合はAPIキーなしでも保存できる
   const canSave = bankFirst || current.apiKey.trim().length > 0;
 
   return (
     <div className="space-y-6">
       {/* 出題ソース */}
-      <div className="rounded-2xl bg-white p-5 shadow">
+      <div className="rounded-2xl bg-white p-5 shadow dark:bg-slate-800">
         <h2 className="font-bold">📦 出題ソース</h2>
         <label className="mt-3 flex cursor-pointer items-start gap-3">
           <input
@@ -62,10 +106,10 @@ export default function Settings({ onDone }) {
             className="mt-1 h-5 w-5 accent-blue-600"
           />
           <span>
-            <span className="block text-sm font-medium text-slate-700">
+            <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">
               内蔵問題を優先して出題(APIクレジット節約)
             </span>
-            <span className="mt-0.5 block text-xs text-slate-500">
+            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
               アプリに収録済みの{QUESTION_BANK.length}問(各カテゴリ90問)から先に出題し、
               使い切ったらAIで生成します。APIキーなしでも内蔵問題だけで学習できます。
             </span>
@@ -73,12 +117,12 @@ export default function Settings({ onDone }) {
         </label>
       </div>
 
-      <div className="rounded-2xl bg-white p-5 shadow">
+      <div className="rounded-2xl bg-white p-5 shadow dark:bg-slate-800">
         <h2 className="font-bold">⚙️ AI設定</h2>
 
         {/* プロバイダ選択 */}
         <div className="mt-4">
-          <span className="text-sm font-medium text-slate-700">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
             使用するAI
           </span>
           <div className="mt-2 grid grid-cols-3 gap-2">
@@ -90,7 +134,7 @@ export default function Settings({ onDone }) {
                 className={`rounded-xl border-2 px-2 py-2.5 transition ${
                   provider === id
                     ? "border-blue-600 bg-blue-600 text-white"
-                    : "border-slate-300 bg-white text-slate-700 hover:border-blue-400"
+                    : "border-slate-300 bg-white text-slate-700 hover:border-blue-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
                 }`}
               >
                 <div className="text-sm font-semibold">{p.label}</div>
@@ -108,7 +152,7 @@ export default function Settings({ onDone }) {
 
         {/* 選択中プロバイダのAPIキー */}
         <label className="mt-4 block">
-          <span className="text-sm font-medium text-slate-700">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
             {def.label} APIキー
           </span>
           <div className="mt-1 flex gap-2">
@@ -118,11 +162,11 @@ export default function Settings({ onDone }) {
               onChange={(e) => updateCurrent({ apiKey: e.target.value })}
               placeholder={def.keyPlaceholder}
               autoComplete="off"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             />
             <button
               onClick={() => setShowKey((v) => !v)}
-              className="shrink-0 rounded-xl bg-slate-200 px-3 text-sm"
+              className="shrink-0 rounded-xl bg-slate-200 px-3 text-sm dark:bg-slate-700 dark:text-slate-200"
               type="button"
             >
               {showKey ? "隠す" : "表示"}
@@ -132,7 +176,7 @@ export default function Settings({ onDone }) {
             href={def.keyUrl}
             target="_blank"
             rel="noreferrer"
-            className="mt-1 inline-block text-xs text-blue-600 underline-offset-2 hover:underline"
+            className="mt-1 inline-block text-xs text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
           >
             APIキーの取得はこちら →
           </a>
@@ -140,15 +184,15 @@ export default function Settings({ onDone }) {
 
         {/* 選択中プロバイダのモデル */}
         <label className="mt-4 block">
-          <span className="text-sm font-medium text-slate-700">モデル</span>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">モデル</span>
           <input
             type="text"
             value={current.model}
             onChange={(e) => updateCurrent({ model: e.target.value })}
             placeholder={def.defaultModel}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
-          <span className="mt-1 block text-xs text-slate-500">
+          <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
             既定: {def.defaultModel}
             {provider === "claude" &&
               current.model === "claude-sonnet-4-20250514" &&
@@ -156,11 +200,54 @@ export default function Settings({ onDone }) {
           </span>
         </label>
 
-        <div className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-relaxed text-amber-800">
+        <div className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-relaxed text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
           ⚠️ APIキーはこの端末のブラウザ(localStorage)にのみ保存されます。
           共有端末では使用後にキーを削除してください。本構成はフロントエンドから
           APIを直接呼び出すため、個人学習用途を想定しています。
         </div>
+      </div>
+
+      {/* データ管理 */}
+      <div className="rounded-2xl bg-white p-5 shadow dark:bg-slate-800">
+        <h2 className="font-bold">💾 データ管理</h2>
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          成績・解答履歴・ブックマークをJSONファイルとして保存し、別の端末やブラウザに引き継げます。
+          APIキーはファイルに含まれません。
+        </p>
+        <div className="mt-3 flex gap-3">
+          <button
+            type="button"
+            onClick={handleExport}
+            className="flex-1 rounded-xl bg-slate-200 py-3 text-sm font-semibold text-slate-700 transition active:scale-[0.98] dark:bg-slate-700 dark:text-slate-200"
+          >
+            エクスポート
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1 rounded-xl bg-slate-200 py-3 text-sm font-semibold text-slate-700 transition active:scale-[0.98] dark:bg-slate-700 dark:text-slate-200"
+          >
+            インポート
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            onChange={handleImportFile}
+            className="hidden"
+          />
+        </div>
+        {dataMessage && (
+          <p
+            className={`mt-3 text-xs ${
+              dataMessage.type === "ok"
+                ? "text-green-600 dark:text-green-400"
+                : "text-red-500"
+            }`}
+          >
+            {dataMessage.text}
+          </p>
+        )}
       </div>
 
       <button

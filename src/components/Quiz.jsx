@@ -5,16 +5,16 @@ export default function Quiz({ question, loading, error, onAnswer, onRetry, onBa
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-        <p className="mt-4 text-slate-600">問題を生成しています…</p>
+        <p className="mt-4 text-slate-600 dark:text-slate-300">問題を生成しています…</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-2xl bg-white p-6 shadow">
-        <p className="font-semibold text-red-600">エラー</p>
-        <p className="mt-2 text-sm text-slate-700">{error}</p>
+      <div className="rounded-2xl bg-white p-6 shadow dark:bg-slate-800">
+        <p className="font-semibold text-red-600 dark:text-red-400">エラー</p>
+        <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">{error}</p>
         <div className="mt-6 flex gap-3">
           <button
             onClick={onRetry}
@@ -24,7 +24,7 @@ export default function Quiz({ question, loading, error, onAnswer, onRetry, onBa
           </button>
           <button
             onClick={onBack}
-            className="flex-1 rounded-xl bg-slate-200 py-3 font-semibold text-slate-700 transition active:scale-[0.98]"
+            className="flex-1 rounded-xl bg-slate-200 py-3 font-semibold text-slate-700 transition active:scale-[0.98] dark:bg-slate-700 dark:text-slate-200"
           >
             ホームへ
           </button>
@@ -38,24 +38,24 @@ export default function Quiz({ question, loading, error, onAnswer, onRetry, onBa
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-xs">
-        <span className="rounded-full bg-blue-100 px-3 py-1 font-medium text-blue-700">
+        <span className="rounded-full bg-blue-100 px-3 py-1 font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300">
           {question.category}
         </span>
-        <span className="rounded-full bg-slate-200 px-3 py-1 font-medium text-slate-600">
+        <span className="rounded-full bg-slate-200 px-3 py-1 font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
           {question.difficulty}
         </span>
         <span
           className={`rounded-full px-3 py-1 font-medium ${
             question.source === "bank"
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-purple-100 text-purple-700"
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+              : "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
           }`}
         >
           {question.source === "bank" ? "内蔵問題" : "AI生成"}
         </span>
       </div>
 
-      <div className="rounded-2xl bg-white p-5 shadow">
+      <div className="rounded-2xl bg-white p-5 shadow dark:bg-slate-800">
         <p className="leading-relaxed">{question.question}</p>
       </div>
 
@@ -64,9 +64,9 @@ export default function Quiz({ question, loading, error, onAnswer, onRetry, onBa
           <button
             key={i}
             onClick={() => onAnswer(i)}
-            className="flex w-full items-start gap-3 rounded-2xl bg-white p-4 text-left shadow transition hover:bg-blue-50 active:scale-[0.98]"
+            className="flex w-full items-start gap-3 rounded-2xl bg-white p-4 text-left shadow transition hover:bg-blue-50 active:scale-[0.98] dark:bg-slate-800 dark:hover:bg-slate-700"
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-600">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
               {CHOICE_LABELS[i]}
             </span>
             <span className="pt-0.5 text-sm leading-relaxed">{choice}</span>
