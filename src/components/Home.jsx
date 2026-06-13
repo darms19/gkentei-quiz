@@ -17,6 +17,7 @@ export default function Home({
   onExam,
   onReview,
   onFlashcards,
+  onCribSheet,
 }) {
   const [difficulty, setDifficulty] = useState("標準");
   const bookmarkCount = getBookmarks().length;
@@ -138,6 +139,17 @@ export default function Home({
             難易度の選択は影響しません
           </p>
         </div>
+
+        {/* カンペ(要点シート) */}
+        <button
+          onClick={onCribSheet}
+          className="w-full rounded-2xl bg-gradient-to-r from-slate-700 to-slate-900 px-5 py-4 text-left text-white shadow-lg transition active:scale-[0.98]"
+        >
+          <div className="text-lg font-bold">📝 カンペ(要点シート)</div>
+          <div className="mt-1 text-sm text-slate-300">
+            苦手カテゴリの用語・間違えた問題・ブックマークを1枚に集約
+          </div>
+        </button>
 
         {/* 模擬試験モード */}
         <button

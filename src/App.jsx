@@ -9,6 +9,7 @@ import Bookmarks from "./components/Bookmarks.jsx";
 import Exam from "./components/Exam.jsx";
 import Review from "./components/Review.jsx";
 import Flashcards from "./components/Flashcards.jsx";
+import CribSheet from "./components/CribSheet.jsx";
 import { generateQuestion } from "./lib/api.js";
 import { pickBankQuestion, resetBankForCategory } from "./lib/bank.js";
 import { takeFromStock, refillStock } from "./lib/aiStock.js";
@@ -229,7 +230,11 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-xl px-4 py-6 pb-28">
+      <main
+        className={`mx-auto px-4 py-6 pb-28 ${
+          screen === "cribsheet" ? "max-w-3xl" : "max-w-xl"
+        }`}
+      >
         {screen === "home" && (
           <Home
             stats={stats}
@@ -238,6 +243,7 @@ export default function App() {
             onExam={() => setScreen("exam")}
             onReview={() => setScreen("review")}
             onFlashcards={() => setScreen("flashcards")}
+            onCribSheet={() => setScreen("cribsheet")}
           />
         )}
         {screen === "quiz" && (
@@ -293,6 +299,9 @@ export default function App() {
         )}
         {screen === "flashcards" && (
           <Flashcards onBack={() => setScreen("home")} />
+        )}
+        {screen === "cribsheet" && (
+          <CribSheet stats={stats} onBack={() => setScreen("home")} />
         )}
       </main>
 
