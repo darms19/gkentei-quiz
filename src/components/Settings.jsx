@@ -131,7 +131,7 @@ export default function Settings({ onDone }) {
               内蔵問題を優先して出題(APIクレジット節約)
             </span>
             <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
-              アプリに収録済みの{bankSize ?? 630}問(各カテゴリ90問)から先に出題し、
+              アプリに収録済みの{bankSize ?? 658}問から先に出題し、
               使い切ったらAIで生成します。APIキーなしでも内蔵問題だけで学習できます。
             </span>
           </span>

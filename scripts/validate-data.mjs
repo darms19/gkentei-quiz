@@ -8,14 +8,14 @@ import { loadQuestionBank } from "../src/data/questionBank.js";
 import { GLOSSARY } from "../src/data/glossary.js";
 import { CATEGORIES, DIFFICULTIES } from "../src/lib/storage.js";
 
-const PER_BUCKET = 30; // カテゴリ×難易度ごとの想定問題数
+const MIN_PER_BUCKET = 30; // カテゴリ×難易度ごとの最低問題数
 const errors = [];
 const fail = (msg) => errors.push(msg);
 
 // --- 問題バンクの検証 ---
 const bank = await loadQuestionBank();
 
-// 1. カテゴリ×難易度ごとの件数が想定どおりか
+// 1. カテゴリ×難易度ごとに最低問題数を満たすか(均等が前提だが追加で増えるのは可)
 const dist = {};
 for (const q of bank) {
   const key = `${q.category}/${q.difficulty}`;
@@ -25,14 +25,10 @@ for (const category of CATEGORIES) {
   for (const difficulty of DIFFICULTIES) {
     const key = `${category}/${difficulty}`;
     const count = dist[key] ?? 0;
-    if (count !== PER_BUCKET) {
-      fail(`件数不一致: ${key} は ${count}問 (想定 ${PER_BUCKET}問)`);
+    if (count < MIN_PER_BUCKET) {
+      fail(`件数不足: ${key} は ${count}問 (最低 ${MIN_PER_BUCKET}問必要)`);
     }
   }
-}
-const expectedTotal = CATEGORIES.length * DIFFICULTIES.length * PER_BUCKET;
-if (bank.length !== expectedTotal) {
-  fail(`総問題数が不正: ${bank.length}問 (想定 ${expectedTotal}問)`);
 }
 
 // 2. ID の重複・構造・選択肢・正解インデックスの検証
@@ -99,5 +95,10 @@ if (errors.length > 0) {
 }
 
 console.log("✅ データ検証OK");
-console.log(`  問題数: ${bank.length}問 (${CATEGORIES.length}カテゴリ × ${DIFFICULTIES.length}難易度 × ${PER_BUCKET}問)`);
+console.log(`  問題数: ${bank.length}問 (各カテゴリ×難易度は最低${MIN_PER_BUCKET}問)`);
+const catTotals = CATEGORIES.map((c) => {
+  const n = DIFFICULTIES.reduce((sum, d) => sum + (dist[`${c}/${d}`] ?? 0), 0);
+  return `${c}:${n}`;
+});
+console.log(`  カテゴリ別: ${catTotals.join(" / ")}`);
 console.log(`  用語数: ${GLOSSARY.length}語`);
