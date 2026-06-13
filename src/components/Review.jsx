@@ -12,6 +12,7 @@ export default function Review({ onStart, onBack }) {
   const due = getDueReviewItems();
 
   const handleRemove = (q) => {
+    if (!window.confirm("この問題を復習リストから削除しますか？")) return;
     removeReviewItem(q);
     setItems(getReviewItems());
   };

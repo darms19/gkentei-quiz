@@ -1,6 +1,23 @@
+import { useEffect } from "react";
+
 const CHOICE_LABELS = ["A", "B", "C", "D"];
 
 export default function Quiz({ question, loading, error, onAnswer, onRetry, onBack }) {
+  // PCでの学習用: 数字キー1〜4、またはA〜Dキーで選択肢を回答できるようにする
+  useEffect(() => {
+    if (!question) return;
+    const count = question.choices.length;
+    const handler = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const num = Number(e.key);
+      const letter = "abcd".indexOf(e.key.toLowerCase());
+      if (num >= 1 && num <= count) onAnswer(num - 1);
+      else if (letter >= 0 && letter < count) onAnswer(letter);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [question, onAnswer]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
@@ -37,6 +54,13 @@ export default function Quiz({ question, loading, error, onAnswer, onRetry, onBa
 
   return (
     <div className="space-y-4">
+      <button
+        onClick={onBack}
+        className="text-sm font-medium text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+      >
+        ← 中断してホームへ
+      </button>
+
       <div className="flex items-center gap-2 text-xs">
         <span className="rounded-full bg-blue-100 px-3 py-1 font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300">
           {question.category}

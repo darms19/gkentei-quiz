@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { CATEGORIES } from "../lib/storage.js";
 import { GLOSSARY } from "../data/glossary.js";
 
-export default function Glossary({ onBack }) {
+export default function Glossary({ onBack, onStart }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("すべて");
 
@@ -70,6 +70,20 @@ export default function Glossary({ onBack }) {
             <p className="mt-1.5 text-sm leading-relaxed text-slate-700 dark:text-slate-200">
               {g.definition}
             </p>
+            {onStart && (
+              <button
+                onClick={() =>
+                  onStart({
+                    mode: "category",
+                    category: g.category,
+                    difficulty: "標準",
+                  })
+                }
+                className="mt-3 text-xs font-medium text-blue-600 underline-offset-2 transition hover:underline dark:text-blue-400"
+              >
+                この分野の問題を解く →
+              </button>
+            )}
           </div>
         ))}
         {filtered.length === 0 && (

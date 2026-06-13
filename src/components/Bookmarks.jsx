@@ -5,6 +5,7 @@ export default function Bookmarks({ onRetry, onBack }) {
   const [bookmarks, setBookmarks] = useState(getBookmarks);
 
   const handleRemove = (q) => {
+    if (!window.confirm("このブックマークを削除しますか？")) return;
     removeBookmark(q);
     setBookmarks(getBookmarks());
   };

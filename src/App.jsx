@@ -219,43 +219,17 @@ export default function App() {
           >
             G検定 問題集
           </button>
-          <nav className="flex items-center gap-1.5 text-sm">
-            <button
-              onClick={() => navigate("glossary")}
-              className={`rounded-lg px-2.5 py-1.5 transition ${
-                screen === "glossary" ? "bg-slate-600" : "hover:bg-slate-700"
-              }`}
-            >
-              用語集
-            </button>
-            <button
-              onClick={() => navigate("dashboard")}
-              className={`rounded-lg px-2.5 py-1.5 transition ${
-                screen === "dashboard" ? "bg-slate-600" : "hover:bg-slate-700"
-              }`}
-            >
-              成績
-            </button>
-            <button
-              onClick={() => navigate("settings")}
-              className={`rounded-lg px-2.5 py-1.5 transition ${
-                screen === "settings" ? "bg-slate-600" : "hover:bg-slate-700"
-              }`}
-            >
-              設定
-            </button>
-            <button
-              onClick={toggleTheme}
-              aria-label="テーマ切り替え"
-              className="rounded-lg px-2 py-1.5 transition hover:bg-slate-700"
-            >
-              {theme === "dark" ? "☀️" : "🌙"}
-            </button>
-          </nav>
+          <button
+            onClick={toggleTheme}
+            aria-label="テーマ切り替え"
+            className="rounded-lg px-2 py-1.5 text-sm transition hover:bg-slate-700"
+          >
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-xl px-4 py-6 pb-12">
+      <main className="mx-auto max-w-xl px-4 py-6 pb-28">
         {screen === "home" && (
           <Home
             stats={stats}
@@ -296,7 +270,7 @@ export default function App() {
           <Settings onDone={() => setScreen("home")} />
         )}
         {screen === "glossary" && (
-          <Glossary onBack={() => setScreen("home")} />
+          <Glossary onBack={() => setScreen("home")} onStart={loadQuestion} />
         )}
         {screen === "bookmarks" && (
           <Bookmarks
@@ -321,6 +295,38 @@ export default function App() {
           <Flashcards onBack={() => setScreen("home")} />
         )}
       </main>
+
+      {/* 下部タブバー: 主要画面へどこからでも片手で移動できる */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-10 border-t border-slate-200 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="mx-auto flex max-w-xl">
+          {[
+            { key: "home", label: "ホーム", icon: "🏠" },
+            { key: "dashboard", label: "成績", icon: "📊" },
+            { key: "glossary", label: "用語集", icon: "📖" },
+            { key: "settings", label: "設定", icon: "⚙️" },
+          ].map((tab) => {
+            const active = screen === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => navigate(tab.key)}
+                aria-current={active ? "page" : undefined}
+                className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition ${
+                  active
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
+              >
+                <span className="text-lg leading-none">{tab.icon}</span>
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

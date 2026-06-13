@@ -144,9 +144,19 @@ export default function Dashboard({ stats, onStatsChange, onHome }) {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">📊 成績</h2>
+        <button
+          onClick={onHome}
+          className="rounded-lg bg-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+        >
+          ホームへ
+        </button>
+      </div>
+
       {/* 総合成績 */}
       <div className="rounded-2xl bg-white p-5 shadow dark:bg-slate-800">
-        <h2 className="font-bold">📊 総合成績</h2>
+        <h2 className="font-bold">総合成績</h2>
         <div className="mt-3 flex items-end gap-6">
           <div>
             <div className="text-3xl font-bold text-blue-700 dark:text-blue-400">
