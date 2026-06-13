@@ -31,36 +31,64 @@ export default function Home({
   });
 
   return (
-    <div className="space-y-6">
-      {/* 連続学習日数 */}
-      {streak > 0 && (
-        <div className="rounded-2xl bg-white px-4 py-3 text-sm shadow dark:bg-slate-800">
-          🔥 連続学習 <span className="font-bold text-orange-600 dark:text-orange-400">{streak}日目</span>
+    <div className="space-y-8">
+      {/* 学習サマリー(ストリーク・今日の復習をワンタップで) */}
+      {(streak > 0 || dueCount > 0) && (
+        <div className="flex flex-wrap gap-3 text-sm">
+          {streak > 0 && (
+            <div className="rounded-2xl bg-white px-4 py-3 shadow dark:bg-slate-800">
+              🔥 連続学習{" "}
+              <span className="font-bold text-orange-600 dark:text-orange-400">
+                {streak}日目
+              </span>
+            </div>
+          )}
+          {dueCount > 0 && (
+            <button
+              onClick={onReview}
+              className="rounded-2xl bg-white px-4 py-3 shadow transition hover:shadow-md active:scale-[0.98] dark:bg-slate-800"
+            >
+              🔁 今日の復習{" "}
+              <span className="font-bold text-teal-600 dark:text-teal-400">
+                {dueCount}問
+              </span>
+            </button>
+          )}
         </div>
       )}
 
-      {/* 難易度選択 */}
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-slate-500 dark:text-slate-400">難易度</h2>
-        <div className="grid grid-cols-3 gap-2">
-          {DIFFICULTIES.map((d) => (
-            <button
-              key={d}
-              onClick={() => setDifficulty(d)}
-              className={`rounded-xl border-2 py-2.5 text-sm font-medium transition ${
-                difficulty === d
-                  ? "border-blue-600 bg-blue-600 text-white"
-                  : "border-slate-300 bg-white text-slate-700 hover:border-blue-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
-              }`}
-            >
-              {d}
-            </button>
-          ))}
+      {/* 問題演習: 難易度セレクタと、その難易度で出題されるモードをまとめる */}
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-bold">問題演習</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            下で選んだ難易度で出題されます
+          </p>
         </div>
-      </section>
 
-      {/* 苦手分野優先モード */}
-      <section>
+        {/* 難易度選択 */}
+        <div>
+          <span className="mb-2 block text-sm font-semibold text-slate-500 dark:text-slate-400">
+            難易度
+          </span>
+          <div className="grid grid-cols-3 gap-2">
+            {DIFFICULTIES.map((d) => (
+              <button
+                key={d}
+                onClick={() => setDifficulty(d)}
+                className={`rounded-xl border-2 py-2.5 text-sm font-medium transition ${
+                  difficulty === d
+                    ? "border-blue-600 bg-blue-600 text-white"
+                    : "border-slate-300 bg-white text-slate-700 hover:border-blue-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                }`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 苦手分野優先モード */}
         <button
           onClick={() => onStart({ mode: "weak", category: null, difficulty })}
           className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 px-5 py-4 text-left text-white shadow-lg transition active:scale-[0.98]"
@@ -72,10 +100,46 @@ export default function Home({
               : "正解率の低い分野から優先的に出題します"}
           </div>
         </button>
+
+        {/* カテゴリ選択 */}
+        <div>
+          <span className="mb-2 block text-sm font-semibold text-slate-500 dark:text-slate-400">
+            カテゴリを選んで出題
+          </span>
+          <div className="grid grid-cols-2 gap-3">
+            {CATEGORIES.map((c) => {
+              const acc = accuracyOf(stats, c);
+              return (
+                <button
+                  key={c}
+                  onClick={() =>
+                    onStart({ mode: "category", category: c, difficulty })
+                  }
+                  className="rounded-2xl bg-white p-4 text-left shadow transition hover:shadow-md active:scale-[0.98] dark:bg-slate-800"
+                >
+                  <div className="font-semibold">{c}</div>
+                  <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {acc === null
+                      ? "未学習"
+                      : `正解率 ${Math.round(acc * 100)}%`}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </section>
 
-      {/* 模擬試験モード */}
-      <section>
+      {/* その他のモード: 難易度の選択を受けないモードを分けて配置 */}
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-bold">その他のモード</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            難易度の選択は影響しません
+          </p>
+        </div>
+
+        {/* 模擬試験モード */}
         <button
           onClick={onExam}
           className="w-full rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 px-5 py-4 text-left text-white shadow-lg transition active:scale-[0.98]"
@@ -85,10 +149,8 @@ export default function Home({
             時間制限つきでまとめて解いて、本番形式で実力を測ります
           </div>
         </button>
-      </section>
 
-      {/* 復習モード */}
-      <section>
+        {/* 復習モード */}
         <button
           onClick={onReview}
           className="w-full rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-600 px-5 py-4 text-left text-white shadow-lg transition active:scale-[0.98]"
@@ -107,58 +169,30 @@ export default function Home({
               : "間違えた問題を間隔反復で復習します"}
           </div>
         </button>
-      </section>
 
-      {/* カテゴリ選択 */}
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
-          カテゴリを選んで出題
-        </h2>
+        {/* ブックマーク・フラッシュカード */}
         <div className="grid grid-cols-2 gap-3">
-          {CATEGORIES.map((c) => {
-            const acc = accuracyOf(stats, c);
-            return (
-              <button
-                key={c}
-                onClick={() =>
-                  onStart({ mode: "category", category: c, difficulty })
-                }
-                className="rounded-2xl bg-white p-4 text-left shadow transition hover:shadow-md active:scale-[0.98] dark:bg-slate-800"
-              >
-                <div className="font-semibold">{c}</div>
-                <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  {acc === null
-                    ? "未学習"
-                    : `正解率 ${Math.round(acc * 100)}%`}
-                </div>
-              </button>
-            );
-          })}
+          <button
+            onClick={onBookmarks}
+            className="rounded-2xl bg-white p-4 text-left shadow transition hover:shadow-md active:scale-[0.98] dark:bg-slate-800"
+          >
+            <div className="font-semibold">🔖 ブックマーク</div>
+            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              {bookmarkCount > 0
+                ? `${bookmarkCount}問を保存中`
+                : "保存した問題を解き直す"}
+            </div>
+          </button>
+          <button
+            onClick={onFlashcards}
+            className="rounded-2xl bg-white p-4 text-left shadow transition hover:shadow-md active:scale-[0.98] dark:bg-slate-800"
+          >
+            <div className="font-semibold">🃏 フラッシュカード</div>
+            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              用語 習得 {knownCount}/{GLOSSARY.length}
+            </div>
+          </button>
         </div>
-      </section>
-
-      {/* ブックマーク・フラッシュカード */}
-      <section className="grid grid-cols-2 gap-3">
-        <button
-          onClick={onBookmarks}
-          className="rounded-2xl bg-white p-4 text-left shadow transition hover:shadow-md active:scale-[0.98] dark:bg-slate-800"
-        >
-          <div className="font-semibold">🔖 ブックマーク</div>
-          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            {bookmarkCount > 0
-              ? `${bookmarkCount}問を保存中`
-              : "保存した問題を解き直す"}
-          </div>
-        </button>
-        <button
-          onClick={onFlashcards}
-          className="rounded-2xl bg-white p-4 text-left shadow transition hover:shadow-md active:scale-[0.98] dark:bg-slate-800"
-        >
-          <div className="font-semibold">🃏 フラッシュカード</div>
-          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            用語 習得 {knownCount}/{GLOSSARY.length}
-          </div>
-        </button>
       </section>
     </div>
   );
