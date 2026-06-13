@@ -101,6 +101,7 @@ export default function CribSheet({ stats, onBack }) {
     mistakes: true,
     bookmarks: true,
   });
+  const [shareMsg, setShareMsg] = useState(null);
 
   // 印刷(ブラウザの「PDFとして保存」)。ダーク時は紙が真っ黒にならないよう一時的にライトへ
   const handlePrint = () => {
@@ -162,33 +163,93 @@ export default function CribSheet({ stats, onBack }) {
     { key: "bookmarks", label: `🔖 ブックマーク ${bookmarks.length}` },
   ];
 
+  // 現在の絞り込み結果をプレーンテキスト化する(共有・コピー用)
+  const buildShareText = () => {
+    const lines = ["📝 G検定 カンペ(要点シート)"];
+    if (hasTerms) {
+      lines.push("", "📚 重要用語");
+      for (const cat of shownCats) {
+        const catTerms = terms.filter((t) => t.category === cat);
+        if (catTerms.length === 0) continue;
+        lines.push(`【${cat}】`);
+        for (const g of catTerms) lines.push(`・${g.term}: ${g.definition}`);
+      }
+    }
+    const pushQuestions = (heading, list) => {
+      lines.push("", heading);
+      for (const qq of list) {
+        lines.push(`・[${qq.category}/${qq.difficulty}] ${qq.question}`);
+        lines.push(`  ✓ 正解: ${qq.choices[qq.answerIndex]}`);
+        if (qq.explanation) lines.push(`  ${qq.explanation}`);
+      }
+    };
+    if (hasMistakes) pushQuestions("❌ 間違えた問題の要点", mistakes);
+    if (hasBookmarks) pushQuestions("🔖 ブックマーク", bookmarks);
+    return lines.join("\n");
+  };
+
+  const handleShare = async () => {
+    const text = buildShareText();
+    // 1. ネイティブ共有(スマホ)。キャンセルは何もしない
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "G検定 カンペ(要点シート)", text });
+        return;
+      } catch (e) {
+        if (e.name === "AbortError") return;
+        // それ以外はクリップボードにフォールバック
+      }
+    }
+    // 2. クリップボードにコピー
+    try {
+      await navigator.clipboard.writeText(text);
+      setShareMsg("📋 クリップボードにコピーしました");
+    } catch {
+      setShareMsg("この環境では共有・コピーに対応していません");
+    }
+    setTimeout(() => setShareMsg(null), 2500);
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between print:hidden">
         <h2 className="text-lg font-bold">📝 カンペ(要点シート)</h2>
-        <div className="flex items-center gap-2 print:hidden">
-          <button
-            onClick={handlePrint}
-            className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white transition active:scale-[0.98]"
-          >
-            🖨 PDF保存
-          </button>
-          <button
-            onClick={onBack}
-            className="rounded-lg bg-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200"
-          >
-            ホームへ
-          </button>
-        </div>
+        <button
+          onClick={onBack}
+          className="rounded-lg bg-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+        >
+          ホームへ
+        </button>
       </div>
 
       <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 print:hidden">
-        苦手カテゴリの要点を1枚に集約しています。カテゴリ・表示項目を絞り込めます。
-        「🖨 PDF保存」で印刷ダイアログから PDF として保存・印刷できます。
+        苦手カテゴリの要点を1枚に集約しています。カテゴリ・表示項目で絞り込み、
+        「共有・コピー」でメモアプリ等へ送るか、「PDF保存」で印刷・保存できます。
       </p>
 
       {/* コントロール */}
       <div className="space-y-3 rounded-2xl bg-white p-4 shadow dark:bg-slate-800 print:hidden">
+        {/* 出力アクション */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleShare}
+            className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white transition active:scale-[0.98]"
+          >
+            📤 共有・コピー
+          </button>
+          <button
+            onClick={handlePrint}
+            className="flex-1 rounded-xl bg-slate-200 py-2.5 text-sm font-semibold text-slate-700 transition active:scale-[0.98] dark:bg-slate-700 dark:text-slate-200"
+          >
+            🖨 PDF保存
+          </button>
+        </div>
+        {shareMsg && (
+          <p className="text-center text-xs font-medium text-green-600 dark:text-green-400">
+            {shareMsg}
+          </p>
+        )}
+
         <input
           type="text"
           value={query}
