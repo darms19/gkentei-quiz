@@ -58,7 +58,7 @@ function PointCard({ q }) {
   const c = CAT[q.category] ?? CAT["機械学習"];
   return (
     <div
-      className={`rounded-lg border-l-2 ${c.border} bg-slate-50 p-2.5 dark:bg-slate-800/60`}
+      className={`break-inside-avoid rounded-lg border-l-2 ${c.border} bg-slate-50 p-2.5 dark:bg-slate-800/60`}
     >
       <div className="mb-1 flex items-center gap-1.5">
         <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
@@ -101,6 +101,20 @@ export default function CribSheet({ stats, onBack }) {
     mistakes: true,
     bookmarks: true,
   });
+
+  // 印刷(ブラウザの「PDFとして保存」)。ダーク時は紙が真っ黒にならないよう一時的にライトへ
+  const handlePrint = () => {
+    const root = document.documentElement;
+    if (root.classList.contains("dark")) {
+      root.classList.remove("dark");
+      const restore = () => {
+        root.classList.add("dark");
+        window.removeEventListener("afterprint", restore);
+      };
+      window.addEventListener("afterprint", restore);
+    }
+    window.print();
+  };
 
   const q = query.trim().toLowerCase();
   const hit = (...texts) =>
@@ -152,21 +166,29 @@ export default function CribSheet({ stats, onBack }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">📝 カンペ(要点シート)</h2>
-        <button
-          onClick={onBack}
-          className="rounded-lg bg-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200"
-        >
-          ホームへ
-        </button>
+        <div className="flex items-center gap-2 print:hidden">
+          <button
+            onClick={handlePrint}
+            className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white transition active:scale-[0.98]"
+          >
+            🖨 PDF保存
+          </button>
+          <button
+            onClick={onBack}
+            className="rounded-lg bg-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+          >
+            ホームへ
+          </button>
+        </div>
       </div>
 
-      <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+      <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 print:hidden">
         苦手カテゴリの要点を1枚に集約しています。カテゴリ・表示項目を絞り込めます。
-        ブラウザの検索(Ctrl+F / ⌘F)でも素早く探せます。
+        「🖨 PDF保存」で印刷ダイアログから PDF として保存・印刷できます。
       </p>
 
       {/* コントロール */}
-      <div className="space-y-3 rounded-2xl bg-white p-4 shadow dark:bg-slate-800">
+      <div className="space-y-3 rounded-2xl bg-white p-4 shadow dark:bg-slate-800 print:hidden">
         <input
           type="text"
           value={query}
@@ -240,7 +262,7 @@ export default function CribSheet({ stats, onBack }) {
 
       {/* 用語(カテゴリ別・2カラム高密度) */}
       {hasTerms && (
-        <section className="rounded-2xl bg-white p-4 shadow dark:bg-slate-800">
+        <section className="rounded-2xl bg-white p-4 shadow dark:bg-slate-800 print:shadow-none">
           <div className="flex items-baseline gap-2 border-b border-slate-200 pb-1.5 dark:border-slate-700">
             <h3 className="text-base font-bold">📚 重要用語</h3>
             <span className="text-xs text-slate-400">{terms.length}語</span>
@@ -250,7 +272,7 @@ export default function CribSheet({ stats, onBack }) {
             if (catTerms.length === 0) return null;
             const c = CAT[cat];
             return (
-              <div key={cat} className="mt-3">
+              <div key={cat} className="mt-3 break-inside-avoid">
                 <div className="mb-1.5 flex items-center gap-2">
                   <span className={`h-2.5 w-2.5 rounded-sm ${c.dot}`} />
                   <h4 className={`text-sm font-bold ${c.text}`}>{cat}</h4>
@@ -258,11 +280,11 @@ export default function CribSheet({ stats, onBack }) {
                     {catTerms.length}語
                   </span>
                 </div>
-                <div className="grid grid-cols-1 gap-x-5 gap-y-1.5 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-x-5 gap-y-1.5 sm:grid-cols-2 print:grid-cols-3">
                   {catTerms.map((g) => (
                     <div
                       key={g.term}
-                      className={`border-l-2 ${c.border} pl-2 leading-snug`}
+                      className={`break-inside-avoid border-l-2 ${c.border} pl-2 leading-snug`}
                     >
                       <span className={`text-[13px] font-bold ${c.text}`}>
                         {g.term}
@@ -281,7 +303,7 @@ export default function CribSheet({ stats, onBack }) {
 
       {/* 間違えた問題の要点 */}
       {hasMistakes && (
-        <section className="rounded-2xl bg-white p-4 shadow dark:bg-slate-800">
+        <section className="rounded-2xl bg-white p-4 shadow dark:bg-slate-800 print:shadow-none">
           <div className="flex items-baseline gap-2 border-b border-slate-200 pb-1.5 dark:border-slate-700">
             <h3 className="text-base font-bold">❌ 間違えた問題の要点</h3>
             <span className="text-xs text-slate-400">{mistakes.length}問</span>
@@ -296,7 +318,7 @@ export default function CribSheet({ stats, onBack }) {
 
       {/* ブックマーク */}
       {hasBookmarks && (
-        <section className="rounded-2xl bg-white p-4 shadow dark:bg-slate-800">
+        <section className="rounded-2xl bg-white p-4 shadow dark:bg-slate-800 print:shadow-none">
           <div className="flex items-baseline gap-2 border-b border-slate-200 pb-1.5 dark:border-slate-700">
             <h3 className="text-base font-bold">🔖 ブックマーク</h3>
             <span className="text-xs text-slate-400">{bookmarks.length}問</span>

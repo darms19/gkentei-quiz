@@ -2,3 +2,18 @@
 
 /* ダークモードは <html> の .dark クラスで切り替える(OS設定ではなくアプリ内トグル) */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* 印刷(カンペのPDF保存)時は白背景・適切な余白にし、背景色も印刷されるようにする */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

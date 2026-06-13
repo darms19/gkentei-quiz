@@ -212,7 +212,7 @@ export default function App() {
 
   return (
     <div className="min-h-dvh bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-      <header className="sticky top-0 z-10 bg-slate-800 text-white shadow dark:bg-slate-900">
+      <header className="sticky top-0 z-10 bg-slate-800 text-white shadow dark:bg-slate-900 print:hidden">
         <div className="mx-auto flex max-w-xl items-center justify-between px-4 py-3">
           <button
             onClick={() => navigate("home")}
@@ -231,7 +231,7 @@ export default function App() {
       </header>
 
       <main
-        className={`mx-auto px-4 py-6 pb-28 ${
+        className={`mx-auto px-4 py-6 pb-28 print:max-w-none print:px-0 print:py-0 ${
           screen === "cribsheet" ? "max-w-3xl" : "max-w-xl"
         }`}
       >
@@ -307,7 +307,7 @@ export default function App() {
 
       {/* 下部タブバー: 主要画面へどこからでも片手で移動できる */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-10 border-t border-slate-200 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95"
+        className="fixed inset-x-0 bottom-0 z-10 border-t border-slate-200 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 print:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="mx-auto flex max-w-xl">
