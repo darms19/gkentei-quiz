@@ -5,7 +5,7 @@ export default function Quiz({ question, loading, error, onAnswer, onRetry, onBa
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-        <p className="mt-4 text-slate-600 dark:text-slate-300">問題を生成しています…</p>
+        <p className="mt-4 text-slate-600 dark:text-slate-300">問題を準備しています…</p>
       </div>
     );
   }

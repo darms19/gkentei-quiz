@@ -1,5 +1,5 @@
 // 内蔵問題バンクからの出題ロジック
-import { QUESTION_BANK } from "../data/questionBank.js";
+import { loadQuestionBank } from "../data/questionBank.js";
 import { shuffleChoices } from "./shuffleChoices.js";
 import {
   getUsedBankIds,
@@ -13,9 +13,10 @@ function pickRandom(list) {
 
 // 未出題の内蔵問題を1問選ぶ。同難易度を優先し、なければ同カテゴリの他難易度から選ぶ。
 // 未出題が1問もなければ null を返す。
-export function pickBankQuestion(category, difficulty) {
+export async function pickBankQuestion(category, difficulty) {
+  const bank = await loadQuestionBank();
   const used = new Set(getUsedBankIds());
-  const inCategory = QUESTION_BANK.filter((q) => q.category === category);
+  const inCategory = bank.filter((q) => q.category === category);
 
   let pool = inCategory.filter(
     (q) => q.difficulty === difficulty && !used.has(q.id)
@@ -31,9 +32,10 @@ export function pickBankQuestion(category, difficulty) {
 }
 
 // カテゴリの出題済み記録をリセットする(APIキーなしで使い切った場合の再利用用)
-export function resetBankForCategory(category) {
-  const idsInCategory = QUESTION_BANK.filter(
-    (q) => q.category === category
-  ).map((q) => q.id);
+export async function resetBankForCategory(category) {
+  const bank = await loadQuestionBank();
+  const idsInCategory = bank
+    .filter((q) => q.category === category)
+    .map((q) => q.id);
   removeUsedBankIds(idsInCategory);
 }

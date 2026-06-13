@@ -34,7 +34,7 @@ export const PROVIDERS = {
   claude: {
     label: "Claude",
     company: "Anthropic",
-    defaultModel: "claude-sonnet-4-20250514",
+    defaultModel: "claude-sonnet-4-6",
     keyPlaceholder: "sk-ant-...",
     keyUrl: "https://console.anthropic.com/",
   },

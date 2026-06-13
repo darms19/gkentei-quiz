@@ -1,20 +1,38 @@
 // 内蔵問題バンク(APIクレジットを消費せずに出題するための事前作成問題)
 // 各カテゴリ: やさしい30問・標準30問・むずかしい30問 = 90問 × 7カテゴリ = 630問
+//
+// 問題データは約8500行と大きいため、動的import(コード分割)で遅延読み込みする。
+// これによりメインのJSバンドルが軽くなり、ホーム/設定/用語集などの初期表示が速くなる。
+// 一度読み込んだら以降は同じ配列を使い回す(キャッシュ)。
 
-import { ML_QUESTIONS } from "./questions/ml.js";
-import { DL_QUESTIONS } from "./questions/dl.js";
-import { MATH_QUESTIONS } from "./questions/math.js";
-import { HIST_QUESTIONS } from "./questions/hist.js";
-import { LAW_QUESTIONS } from "./questions/law.js";
-import { ETH_QUESTIONS } from "./questions/eth.js";
-import { BIZ_QUESTIONS } from "./questions/biz.js";
+let cache = null;
+let loading = null;
 
-export const QUESTION_BANK = [
-  ...ML_QUESTIONS,
-  ...DL_QUESTIONS,
-  ...MATH_QUESTIONS,
-  ...HIST_QUESTIONS,
-  ...LAW_QUESTIONS,
-  ...ETH_QUESTIONS,
-  ...BIZ_QUESTIONS,
-];
+export async function loadQuestionBank() {
+  if (cache) return cache;
+  // 同時に複数回呼ばれても import は1回だけにする
+  if (!loading) {
+    loading = Promise.all([
+      import("./questions/ml.js"),
+      import("./questions/dl.js"),
+      import("./questions/math.js"),
+      import("./questions/hist.js"),
+      import("./questions/law.js"),
+      import("./questions/eth.js"),
+      import("./questions/biz.js"),
+    ]).then(([ml, dl, math, hist, law, eth, biz]) => {
+      cache = [
+        ...ml.ML_QUESTIONS,
+        ...dl.DL_QUESTIONS,
+        ...math.MATH_QUESTIONS,
+        ...hist.HIST_QUESTIONS,
+        ...law.LAW_QUESTIONS,
+        ...eth.ETH_QUESTIONS,
+        ...biz.BIZ_QUESTIONS,
+      ];
+      loading = null;
+      return cache;
+    });
+  }
+  return loading;
+}

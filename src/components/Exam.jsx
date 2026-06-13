@@ -106,12 +106,18 @@ export default function Exam({ onRunningChange, onStatsChange, onHome }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remaining, phase]);
 
-  const handleStart = (p) => {
+  const [starting, setStarting] = useState(false);
+
+  const handleStart = async (p) => {
+    setStarting(true);
     setPreset(p);
-    setQuestions(buildExamQuestions(p.total));
+    // 問題データは動的importで読み込む(初回のみ短い待ち時間が発生する)
+    const examQuestions = await buildExamQuestions(p.total);
+    setQuestions(examQuestions);
     setAnswers(Array(p.total).fill(null));
     setCurrent(0);
     setRemaining(p.minutes * 60);
+    setStarting(false);
     setPhase("running");
   };
 
@@ -182,7 +188,8 @@ export default function Exam({ onRunningChange, onStatsChange, onHome }) {
             <button
               key={p.id}
               onClick={() => handleStart(p)}
-              className="w-full rounded-2xl bg-white p-5 text-left shadow transition hover:shadow-md active:scale-[0.98] dark:bg-slate-800"
+              disabled={starting}
+              className="w-full rounded-2xl bg-white p-5 text-left shadow transition hover:shadow-md active:scale-[0.98] disabled:opacity-50 dark:bg-slate-800"
             >
               <div className="flex items-baseline justify-between">
                 <span className="text-lg font-bold">{p.label}</span>

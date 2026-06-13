@@ -82,14 +82,16 @@ export default function App() {
       setQuestion(null);
       setSelectedIndex(null);
       setScreen("quiz");
+      // 問題データは動的importで読み込むため、その間はローディングを表示する
+      setLoading(true);
 
       // 1. 内蔵問題バンクから出題(APIクレジット消費なし)
       if (isBankFirst()) {
-        let q = pickBankQuestion(actualCategory, difficulty);
+        let q = await pickBankQuestion(actualCategory, difficulty);
         // バンクを使い切っていてAPIキーもない場合は、出題記録をリセットして再利用
         if (!q && !apiKey) {
-          resetBankForCategory(actualCategory);
-          q = pickBankQuestion(actualCategory, difficulty);
+          await resetBankForCategory(actualCategory);
+          q = await pickBankQuestion(actualCategory, difficulty);
         }
         if (q) {
           addRecentQuestion(actualCategory, q.question);

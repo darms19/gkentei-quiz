@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   PROVIDERS,
   getSelectedProvider,
@@ -11,7 +11,7 @@ import {
   importData,
 } from "../lib/storage.js";
 import { totalStockCount, clearStock, STOCK_TARGET } from "../lib/aiStock.js";
-import { QUESTION_BANK } from "../data/questionBank.js";
+import { loadQuestionBank } from "../data/questionBank.js";
 
 export default function Settings({ onDone }) {
   const [provider, setProvider] = useState(getSelectedProvider);
@@ -31,7 +31,19 @@ export default function Settings({ onDone }) {
   const [bankFirst, setBankFirstState] = useState(isBankFirst);
   const [dataMessage, setDataMessage] = useState(null);
   const [stockCount, setStockCount] = useState(totalStockCount);
+  // 内蔵問題は動的importで読み込むため、件数は非同期で取得する
+  const [bankSize, setBankSize] = useState(null);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    loadQuestionBank().then((bank) => {
+      if (active) setBankSize(bank.length);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleClearStock = () => {
     if (window.confirm("AI生成問題のストックを削除しますか？")) {
@@ -119,7 +131,7 @@ export default function Settings({ onDone }) {
               内蔵問題を優先して出題(APIクレジット節約)
             </span>
             <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
-              アプリに収録済みの{QUESTION_BANK.length}問(各カテゴリ90問)から先に出題し、
+              アプリに収録済みの{bankSize ?? 630}問(各カテゴリ90問)から先に出題し、
               使い切ったらAIで生成します。APIキーなしでも内蔵問題だけで学習できます。
             </span>
           </span>
@@ -229,7 +241,7 @@ export default function Settings({ onDone }) {
             既定: {def.defaultModel}
             {provider === "claude" &&
               current.model === "claude-sonnet-4-20250514" &&
-              "(2026年6月15日廃止予定。廃止後は claude-sonnet-4-6 などへの変更が必要です)"}
+              "(このモデルは2026年6月15日に廃止されます。claude-sonnet-4-6 などへ変更してください)"}
           </span>
         </label>
 

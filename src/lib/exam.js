@@ -1,5 +1,5 @@
 // 模擬試験モードの出題セット生成
-import { QUESTION_BANK } from "../data/questionBank.js";
+import { loadQuestionBank } from "../data/questionBank.js";
 import { CATEGORIES } from "./storage.js";
 import { shuffleChoices } from "./shuffleChoices.js";
 
@@ -38,14 +38,15 @@ function shuffle(list) {
 
 // 内蔵問題からカテゴリ均等(端数はランダムなカテゴリに配分)に抽出した出題セットを作る。
 // 通常モードの「出題済み記録」とは独立しており、何度でも受験できる。
-export function buildExamQuestions(total) {
+export async function buildExamQuestions(total) {
+  const bank = await loadQuestionBank();
   const base = Math.floor(total / CATEGORIES.length);
   const remainder = total - base * CATEGORIES.length;
   const extra = new Set(shuffle(CATEGORIES).slice(0, remainder));
   const selected = [];
   for (const category of CATEGORIES) {
     const count = base + (extra.has(category) ? 1 : 0);
-    const pool = shuffle(QUESTION_BANK.filter((q) => q.category === category));
+    const pool = shuffle(bank.filter((q) => q.category === category));
     selected.push(...pool.slice(0, count));
   }
   return shuffle(selected).map((q) => shuffleChoices({ ...q, source: "bank" }));
